@@ -1,0 +1,4 @@
+window.DIRECT_BACKEND_CONFIG = {
+  supabaseUrl: "https://ixpdgdqckgtolyphuzwh.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4cGRnZHFja2d0b2x5cGh1endoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NjAxNjgsImV4cCI6MjA5NjUzNjE2OH0.ZbxsvglmruzJHR8OiOxscgOfffoG8Wh1spg4rQUJ9Iw",
+};

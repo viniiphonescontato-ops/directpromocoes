@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Direct Promoções | Dashboard</title>
+    <meta id="themeColorMeta" name="theme-color" content="#051a46" />
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="backend.config.js" defer></script>
+    <script src="supabase-client.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegacao principal">
+        <a class="brand" href="#" aria-label="Direct Promoções">
+          <span class="brand-mark">
+            <img src="assets/favicon.png" alt="Direct Promoções" />
+          </span>
+          <span>
+            <strong>Direct Promoções</strong>
+            <small>Operação promocional</small>
+          </span>
+        </a>
+
+        <nav class="main-nav">
+          <button class="nav-item active" type="button" data-view="dashboard">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Dashboard</span>
+          </button>
+          <button class="nav-item" type="button" data-view="diaristas">
+            <i data-lucide="user-round"></i>
+            <span>Diaristas</span>
+          </button>
+          <button class="nav-item" type="button" data-view="demandas">
+            <i data-lucide="clipboard-list"></i>
+            <span>Demandas</span>
+          </button>
+          <button class="nav-item" type="button" data-view="lojas">
+            <i data-lucide="store"></i>
+            <span>Lojas & Redes</span>
+          </button>
+          <button class="nav-item" type="button" data-view="financeiro">
+            <i data-lucide="bar-chart-3"></i>
+            <span>Financeiro</span>
+          </button>
+          <button class="nav-item" type="button" data-view="configuracoes">
+            <i data-lucide="settings"></i>
+            <span>Configurações</span>
+          </button>
+        </nav>
+
+        <button id="themeToggle" class="nav-item theme-toggle" type="button" aria-label="Alternar para modo escuro" aria-pressed="false">
+          <i data-lucide="moon"></i>
+          <span>Modo escuro</span>
+        </button>
+
+        <div class="sidebar-panel">
+          <img src="assets/direct-promocoes-logo.jpeg" alt="" />
+          <div>
+            <strong>Meta do mes</strong>
+            <span id="sidebarGoal">78% concluida</span>
+          </div>
+          <div class="mini-progress" aria-hidden="true">
+            <span style="width: 78%"></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="dashboard">
+        <header class="topbar">
+          <div>
+            <p id="pageEyebrow" class="eyebrow">Operação em tempo real</p>
+            <h1 id="pageTitle">Direct Promoções</h1>
+          </div>
+          <div class="topbar-actions">
+            <label id="globalSearchWrapper" class="search topbar-search" hidden>
+              <i data-lucide="search"></i>
+              <input id="searchInput" type="search" placeholder="Buscar diarista, demanda, loja ou rede" />
+            </label>
+            <div id="periodFilter" class="segmented" aria-label="Periodo">
+              <button class="period-btn active" type="button" data-period="30">30d</button>
+              <button class="period-btn" type="button" data-period="60">60d</button>
+              <button class="period-btn" type="button" data-period="90">90d</button>
+              <button class="period-btn" type="button" data-period="180">180d</button>
+            </div>
+          </div>
+        </header>
+
+        <section class="kpi-grid view-panel active" data-view-panel="dashboard" aria-label="Indicadores principais">
+          <article class="kpi-card">
+            <div class="kpi-icon revenue"><i data-lucide="banknote"></i></div>
+            <span>💰 Faturamento</span>
+            <strong id="revenueValue">R$ 0</strong>
+            <small id="revenueTrend">receita prevista</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon clients"><i data-lucide="user-round-check"></i></div>
+            <span>✅ Diárias atendidas</span>
+            <strong id="attendedValue">0</strong>
+            <small id="attendedTrend">alocações realizadas</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon conversion"><i data-lucide="target"></i></div>
+            <span>🎯 Demandas concluídas</span>
+            <strong id="conversionValue">0%</strong>
+            <small id="conversionTrend">taxa de atendimento</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon tasks"><i data-lucide="alarm-clock-check"></i></div>
+            <span>📈 Margem prevista</span>
+            <strong id="marginValue">R$ 0</strong>
+            <small id="marginTrend">faturamento menos custos</small>
+          </article>
+        </section>
+
+        <section class="dashboard-report-grid view-panel active" data-view-panel="dashboard">
+          <article class="panel report-card">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">💰 Faturamento</p>
+                <h3>Receita por rede</h3>
+              </div>
+              <span id="revenuePieTotal" class="subtle-badge">R$ 0</span>
+            </div>
+            <div class="donut-wrap dashboard-donut">
+              <canvas id="revenuePieChart" width="260" height="260" aria-label="Gráfico de faturamento por rede"></canvas>
+              <div id="revenuePieLegend" class="legend"></div>
+            </div>
+          </article>
+
+          <article class="panel report-card">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">✅ Diárias</p>
+                <h3>Atendidas por rede</h3>
+              </div>
+              <span id="attendedPieTotal" class="subtle-badge">0 diárias</span>
+            </div>
+            <div class="donut-wrap dashboard-donut">
+              <canvas id="attendedPieChart" width="260" height="260" aria-label="Gráfico de diárias atendidas por rede"></canvas>
+              <div id="attendedPieLegend" class="legend"></div>
+            </div>
+          </article>
+
+          <article class="panel report-card">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">🧩 Setores</p>
+                <h3>Demandas por setor</h3>
+              </div>
+              <span id="sectorPieTotal" class="subtle-badge">0 demandas</span>
+            </div>
+            <div class="donut-wrap dashboard-donut">
+              <canvas id="sectorPieChart" width="260" height="260" aria-label="Gráfico de demandas por setor"></canvas>
+              <div id="sectorPieLegend" class="legend"></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="view-panel workspace-grid" data-view-panel="diaristas">
+          <article class="panel form-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">👥 Cadastro rápido</p>
+                <h3>Nova diarista</h3>
+              </div>
+            </div>
+            <form id="diaristForm" class="stack-form">
+              <input name="id" type="hidden" />
+              <label>Nome completo<input name="name" required placeholder="Ex.: Maria Oliveira" /></label>
+              <label>Telefone<input name="phone" required placeholder="(85) 99999-0000" /></label>
+              <label>CPF<input name="cpf" placeholder="000.000.000-00" /></label>
+              <input id="diaristSectorsInput" name="sectors" type="hidden" />
+              <div class="field-block">
+                <span class="field-label">Setores</span>
+                <div id="selectedDiaristSectors" class="chip-list empty"><span class="muted-line">Nenhum setor selecionado.</span></div>
+                <div class="inline-control">
+                  <select id="diaristSectorSelect"></select>
+                  <button id="addDiaristSectorBtn" class="ghost-btn" type="button">Adicionar setor</button>
+                </div>
+                <div class="inline-control">
+                  <input id="newSectorInput" list="sectorOptions" placeholder="Nova função/setor" />
+                  <button id="createSectorBtn" class="ghost-btn" type="button">Criar função</button>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit"><i data-lucide="save"></i>Salvar</button>
+                <button class="ghost-btn" type="reset">Limpar</button>
+              </div>
+            </form>
+          </article>
+          <article class="panel list-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">👥 Equipe</p>
+                <h3>Diaristas cadastradas</h3>
+              </div>
+              <div class="panel-heading-actions">
+                <label class="mini-search">
+                  <i data-lucide="search"></i>
+                  <input id="diaristNameSearch" type="search" placeholder="Buscar por nome" />
+                </label>
+                <span id="diaristCount" class="subtle-badge">0 ativas</span>
+              </div>
+            </div>
+            <div id="diaristList" class="record-list"></div>
+          </article>
+        </section>
+
+        <section class="view-panel workspace-grid" data-view-panel="demandas">
+          <article class="panel form-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">📋 Operação</p>
+                <h3>Nova demanda</h3>
+              </div>
+            </div>
+            <form id="demandForm" class="stack-form">
+              <input name="id" type="hidden" />
+              <label>Loja/Rede<select id="demandStoreSelect" name="storeId" required></select></label>
+              <label>Data<input name="date" required type="date" /></label>
+              <label>Setor<select id="sectorSelect" name="sector" required></select></label>
+              <label>Vagas<input name="spots" required min="1" type="number" value="1" /></label>
+              <label>Valor por vaga<input name="dailyRate" inputmode="decimal" pattern="^[0-9]+([,.][0-9]{1,2})?$" placeholder="Ex.: 180,50" value="180,00" /></label>
+              <label>Custo por vaga<input name="workerCost" inputmode="decimal" pattern="^[0-9]+([,.][0-9]{1,2})?$" placeholder="Ex.: 120,75" value="120,00" /></label>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit"><i data-lucide="save"></i>Salvar demanda</button>
+                <button class="ghost-btn" type="reset">Limpar</button>
+              </div>
+            </form>
+          </article>
+          <article class="panel list-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">📋 Fila</p>
+                <h3>Demandas abertas</h3>
+              </div>
+              <div class="panel-heading-actions">
+                <label class="mini-search">
+                  <i data-lucide="search"></i>
+                  <input id="demandStoreSearch" type="search" placeholder="Buscar por loja" />
+                </label>
+                <span id="demandCount" class="subtle-badge">0 abertas</span>
+              </div>
+            </div>
+            <div id="demandList" class="record-list"></div>
+          </article>
+        </section>
+
+        <section class="view-panel workspace-grid" data-view-panel="lojas">
+          <article class="panel form-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">🏬 Rede comercial</p>
+                <h3>Nova loja ou rede</h3>
+              </div>
+            </div>
+            <form id="storeForm" class="stack-form">
+              <input name="id" type="hidden" />
+              <label>Rede<input name="network" placeholder="Ex.: Hipermarket" /></label>
+              <label>Loja<input name="name" required placeholder="Ex.: Mondubim" /></label>
+              <label>Tipo<select name="type"><option>Rede</option><option>Loja</option></select></label>
+              <label>Responsável<input name="owner" required placeholder="Ex.: Ana" /></label>
+              <label>Cidade<input name="city" placeholder="Ex.: Fortaleza" /></label>
+              <label>Endereço<input name="address" placeholder="Rua, número, bairro, cidade - UF" /></label>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit"><i data-lucide="save"></i>Salvar</button>
+                <button class="ghost-btn" type="reset">Limpar</button>
+              </div>
+            </form>
+          </article>
+          <article class="panel list-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">🏬 Base</p>
+                <h3>Lojas e redes</h3>
+              </div>
+              <span id="storeCount" class="subtle-badge">0 registros</span>
+            </div>
+            <div id="storeList" class="record-list"></div>
+          </article>
+        </section>
+
+        <section class="view-panel finance-grid" data-view-panel="financeiro">
+          <article class="kpi-card">
+            <div class="kpi-icon revenue"><i data-lucide="wallet"></i></div>
+            <span>Total previsto</span>
+            <strong id="financeTotal">R$ 0</strong>
+            <small>baseado nas demandas</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon clients"><i data-lucide="receipt"></i></div>
+            <span>Ticket médio</span>
+            <strong id="financeAverage">R$ 0</strong>
+            <small>por loja/rede</small>
+          </article>
+          <article class="panel finance-table-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">💰 Resumo</p>
+                <h3>Financeiro por demanda</h3>
+              </div>
+            </div>
+            <div id="financeList" class="record-list"></div>
+          </article>
+        </section>
+
+        <section class="view-panel settings-grid" data-view-panel="configuracoes">
+          <article class="panel list-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">🧩 Base operacional</p>
+                <h3>Setores cadastrados</h3>
+              </div>
+              <span id="sectorCount" class="subtle-badge">0 setores</span>
+            </div>
+            <div id="sectorList" class="chip-list"></div>
+          </article>
+          <article class="panel form-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">💸 Diárias</p>
+                <h3>Valor por setor</h3>
+              </div>
+              <span id="sectorRateCount" class="subtle-badge">0 valores</span>
+            </div>
+            <form id="sectorRateForm" class="stack-form">
+              <input name="id" type="hidden" />
+              <label>Setor<select id="sectorRateSelect" name="sector" required></select></label>
+              <div class="inline-control">
+                <label>Diária mínima<input name="minValue" inputmode="decimal" pattern="^[0-9]+([,.][0-9]{1,2})?$" placeholder="Ex.: 80,00" value="80,00" /></label>
+                <label>Diária máxima<input name="maxValue" inputmode="decimal" pattern="^[0-9]+([,.][0-9]{1,2})?$" placeholder="Ex.: 90,00" value="90,00" /></label>
+              </div>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit"><i data-lucide="save"></i>Salvar diária</button>
+                <button class="ghost-btn" type="reset">Limpar</button>
+              </div>
+            </form>
+            <div id="sectorRateList" class="record-list compact-list"></div>
+          </article>
+          <article class="panel form-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">🏦 Recebimento</p>
+                <h3>Valor cobrado por rede</h3>
+              </div>
+              <span id="companyRateCount" class="subtle-badge">0 valores</span>
+            </div>
+            <form id="companyRateForm" class="stack-form">
+              <input name="id" type="hidden" />
+              <label>Empresa/Rede<select id="companyRateSelect" name="company" required></select></label>
+              <label>Valor recebido por diária<input name="value" inputmode="decimal" pattern="^[0-9]+([,.][0-9]{1,2})?$" placeholder="Ex.: 109,25" value="109,25" /></label>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit"><i data-lucide="save"></i>Salvar valor</button>
+                <button class="ghost-btn" type="reset">Limpar</button>
+              </div>
+            </form>
+            <div id="companyRateList" class="record-list compact-list"></div>
+          </article>
+        </section>
+        <datalist id="sectorOptions"></datalist>
+      </main>
+    </div>
+  </body>
+</html>
