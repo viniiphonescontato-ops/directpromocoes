@@ -177,16 +177,16 @@
               <label>Telefone<input name="phone" required placeholder="(85) 99999-0000" /></label>
               <label>CPF<input name="cpf" placeholder="000.000.000-00" /></label>
               <input id="diaristSectorsInput" name="sectors" type="hidden" />
-              <div class="field-block">
+              <div class="field-block sector-picker">
                 <span class="field-label">Setores</span>
                 <div id="selectedDiaristSectors" class="chip-list empty"><span class="muted-line">Nenhum setor selecionado.</span></div>
-                <div class="inline-control">
+                <div class="inline-control sector-action-row">
                   <select id="diaristSectorSelect"></select>
-                  <button id="addDiaristSectorBtn" class="ghost-btn" type="button">Adicionar setor</button>
+                  <button id="addDiaristSectorBtn" class="ghost-btn sector-btn" type="button"><i data-lucide="plus"></i>Adicionar</button>
                 </div>
-                <div class="inline-control">
+                <div class="inline-control sector-action-row">
                   <input id="newSectorInput" list="sectorOptions" placeholder="Nova funcao/setor" />
-                  <button id="createSectorBtn" class="ghost-btn" type="button">Criar funcao</button>
+                  <button id="createSectorBtn" class="ghost-btn sector-btn" type="button"><i data-lucide="plus-circle"></i>Criar</button>
                 </div>
               </div>
               <div class="form-actions">
@@ -224,11 +224,13 @@
             <form id="demandForm" class="stack-form">
               <input name="id" type="hidden" />
               <label>Loja/Rede<select id="demandStoreSelect" name="storeId" required></select></label>
-              <label>Data<input name="date" required type="date" /></label>
+              <div class="inline-control">
+                <label>Data de inicio<input name="startDate" required type="date" /></label>
+                <label>Data do fim<input name="endDate" required type="date" /></label>
+              </div>
               <label>Setor<select id="sectorSelect" name="sector" required></select></label>
               <label>Vagas<input name="spots" required min="1" type="number" value="1" /></label>
-              <label>Valor por vaga<input name="dailyRate" inputmode="decimal" pattern="^[0-9]+([,.][0-9]{1,2})?$" placeholder="Ex.: 180,50" value="180,00" /></label>
-              <label>Custo por vaga<input name="workerCost" inputmode="decimal" pattern="^[0-9]+([,.][0-9]{1,2})?$" placeholder="Ex.: 120,75" value="120,00" /></label>
+              <label>Valor pago ao diarista<input name="workerCost" inputmode="decimal" pattern="^[0-9]+([,.][0-9]{1,2})?$" placeholder="Ex.: 120,75" value="120,00" /></label>
               <div class="form-actions">
                 <button class="primary-btn" type="submit"><i data-lucide="save"></i>Salvar demanda</button>
                 <button class="ghost-btn" type="reset">Limpar</button>
@@ -288,17 +290,66 @@
         </section>
 
         <section class="view-panel finance-grid" data-view-panel="financeiro">
+          <article class="panel finance-filter-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Filtros</p>
+                <h3>Visao financeira</h3>
+              </div>
+              <span id="financeFilterSummary" class="subtle-badge">30 dias</span>
+            </div>
+            <div class="finance-filters">
+              <label>Rede<select id="financeNetworkFilter"></select></label>
+              <label>Loja<select id="financeStoreFilter"></select></label>
+            </div>
+          </article>
           <article class="kpi-card">
             <div class="kpi-icon revenue"><i data-lucide="wallet"></i></div>
-            <span>Total previsto</span>
+            <span>Faturamento previsto</span>
             <strong id="financeTotal">R$ 0</strong>
-            <small>baseado nas demandas</small>
+            <small>recebimento das empresas</small>
           </article>
           <article class="kpi-card">
             <div class="kpi-icon clients"><i data-lucide="receipt"></i></div>
+            <span>Custo previsto</span>
+            <strong id="financeCost">R$ 0</strong>
+            <small>valor pago aos diaristas</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon conversion"><i data-lucide="trending-up"></i></div>
+            <span>Lucro estimado</span>
+            <strong id="financeProfit">R$ 0</strong>
+            <small>faturamento menos custos</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon warning"><i data-lucide="percent"></i></div>
+            <span>Margem estimada</span>
+            <strong id="financeMargin">0%</strong>
+            <small>lucro sobre faturamento</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon revenue"><i data-lucide="calendar-days"></i></div>
+            <span>Diarias solicitadas</span>
+            <strong id="financeRequested">0</strong>
+            <small>vagas x dias</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon clients"><i data-lucide="check-circle-2"></i></div>
+            <span>Diarias atendidas</span>
+            <strong id="financeAttended">0</strong>
+            <small>diaristas escaladas</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon warning"><i data-lucide="alert-triangle"></i></div>
+            <span>Faltas/Pendencias</span>
+            <strong id="financeAbsences">0</strong>
+            <small>diarias sem escala</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon clients"><i data-lucide="badge-dollar-sign"></i></div>
             <span>Ticket medio</span>
             <strong id="financeAverage">R$ 0</strong>
-            <small>por loja/rede</small>
+            <small>por demanda filtrada</small>
           </article>
           <article class="panel finance-table-panel">
             <div class="panel-heading">

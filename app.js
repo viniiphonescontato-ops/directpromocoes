@@ -74,9 +74,9 @@ const requiredStores = [
 ];
 
 const fallbackDemands = [
-  { id: "demand-rede-norte-caixa", storeId: "store-rede-norte", date: "2026-06-18", sector: "Operador de caixa", spots: 4, dailyRate: 180, workerCost: 120, assignedDiaristIds: ["diarist-maria-oliveira"], status: "Aberta" },
-  { id: "demand-mix-mercearia", storeId: "store-mix-atacado", date: "2026-06-20", sector: "Repositor de Mercearia", spots: 6, dailyRate: 180, workerCost: 120, assignedDiaristIds: [], status: "Em escala" },
-  { id: "demand-urban-padaria", storeId: "store-urban-market", date: "2026-06-22", sector: "Balconista de Padaria", spots: 2, dailyRate: 190, workerCost: 130, assignedDiaristIds: [], status: "Concluída" },
+  { id: "demand-rede-norte-caixa", storeId: "store-rede-norte", startDate: "2026-06-18", endDate: "2026-06-18", sector: "Operador de caixa", spots: 4, workerCost: 120, assignedDiaristIds: ["diarist-maria-oliveira"], status: "Aberta" },
+  { id: "demand-mix-mercearia", storeId: "store-mix-atacado", startDate: "2026-06-20", endDate: "2026-06-20", sector: "Repositor de Mercearia", spots: 6, workerCost: 120, assignedDiaristIds: [], status: "Em escala" },
+  { id: "demand-urban-padaria", storeId: "store-urban-market", startDate: "2026-06-22", endDate: "2026-06-22", sector: "Balconista de Padaria", spots: 2, workerCost: 130, assignedDiaristIds: [], status: "Concluída" },
 ];
 
 const baseWeeks = [
@@ -105,6 +105,8 @@ const state = {
   query: "",
   diaristQuery: "",
   demandStoreQuery: "",
+  financeNetworkFilter: "",
+  financeStoreFilter: "",
   selectedDiaristSectors: [],
   settings: readStore(storageKeys.settings, fallbackSettings),
   theme: localStorage.getItem(storageKeys.theme) || "light",
@@ -354,13 +356,16 @@ function normalizeDiarists(diarists) {
 function normalizeDemands(demands) {
   return demands.map((demand) => {
     const store = demand.storeId ? getStore(demand.storeId) : findStoreByName(demand.store);
+    const startDate = demand.startDate || demand.date || new Date().toISOString().slice(0, 10);
+    const endDate = demand.endDate || demand.finishDate || startDate;
     return {
       id: demand.id || uid("demand"),
       storeId: demand.storeId || store?.id || state?.stores?.[0]?.id || "",
-      date: demand.date || new Date().toISOString().slice(0, 10),
+      date: startDate,
+      startDate,
+      endDate,
       sector: demand.sector || requiredSectors[0],
       spots: Number(demand.spots || 1),
-      dailyRate: parseMoney(demand.dailyRate || 180),
       workerCost: parseMoney(demand.workerCost || 120),
       assignedDiaristIds: Array.isArray(demand.assignedDiaristIds) ? demand.assignedDiaristIds : [],
       status: demand.status || "Aberta",
@@ -440,19 +445,122 @@ function storeDisplayName(store) {
 }
 
 function demandRevenue(demand) {
-  return Number(demand.spots || 0) * parseMoney(demand.dailyRate || 0);
+  return Number(demand.spots || 0) * demandDays(demand) * supermarketDailyRate(demand);
 }
 
 function demandCost(demand) {
-  return Number(demand.assignedDiaristIds?.length || 0) * parseMoney(demand.workerCost || 0);
+  return demandRequestedCount(demand) * parseMoney(demand.workerCost || 0);
 }
 
 function demandMargin(demand) {
   return demandRevenue(demand) - demandCost(demand);
 }
 
+function demandRequestedCount(demand) {
+  return Number(demand.spots || 0) * demandDays(demand);
+}
+
+function demandAttendedCount(demand) {
+  const filled = Number(demand.assignedDiaristIds?.length || 0) * demandDays(demand);
+  return Math.min(demandRequestedCount(demand), filled);
+}
+
+function demandMissingCount(demand) {
+  return Math.max(0, demandRequestedCount(demand) - demandAttendedCount(demand));
+}
+
 function totalFinance() {
   return state.demands.reduce((sum, demand) => sum + demandRevenue(demand), 0);
+}
+
+function dateToTime(value) {
+  const time = new Date(`${value || ""}T00:00:00`).getTime();
+  return Number.isFinite(time) ? time : Date.now();
+}
+
+function demandDays(demand) {
+  const start = dateToTime(demand.startDate || demand.date);
+  const end = dateToTime(demand.endDate || demand.startDate || demand.date);
+  return Math.max(1, Math.round((end - start) / 86400000) + 1);
+}
+
+function supermarketDailyRate(demand) {
+  return parseMoney(companyRateForDemand(demand)?.value || 0);
+}
+
+function companyRateForDemand(demand) {
+  const store = getStore(demand.storeId);
+  const candidates = [store?.network, store?.name, store ? storeDisplayName(store) : ""]
+    .filter(Boolean)
+    .map((item) => normalizeText(item));
+  return state.companyRates.find((item) => candidates.includes(normalizeText(item.company))) || null;
+}
+
+function formatDemandPeriod(demand) {
+  const start = demand.startDate || demand.date;
+  const end = demand.endDate || start;
+  return start === end ? start : `${start} ate ${end}`;
+}
+
+function normalizeDemandPeriod(startDate, endDate) {
+  const start = startDate || new Date().toISOString().slice(0, 10);
+  const end = endDate && dateToTime(endDate) >= dateToTime(start) ? endDate : start;
+  return { start, end };
+}
+
+function demandNetworkName(demand) {
+  const store = getStore(demand.storeId);
+  return store?.network || store?.name || "Sem rede";
+}
+
+function demandInFinancePeriod(demand) {
+  const today = dateToTime(new Date().toISOString().slice(0, 10));
+  const windowEnd = today + Math.max(1, Number(state.period || 30)) * 86400000;
+  const start = dateToTime(demand.startDate || demand.date);
+  const end = dateToTime(demand.endDate || demand.startDate || demand.date);
+  return end >= today && start <= windowEnd;
+}
+
+function financeFilteredDemands() {
+  return state.demands.filter((demand) => {
+    const store = getStore(demand.storeId);
+    const network = demandNetworkName(demand);
+    const networkMatches = !state.financeNetworkFilter || normalizeText(network) === normalizeText(state.financeNetworkFilter);
+    const storeMatches = !state.financeStoreFilter || store?.id === state.financeStoreFilter;
+    return demandInFinancePeriod(demand) && networkMatches && storeMatches;
+  });
+}
+
+function renderFinanceFilters(filteredDemands) {
+  const networkSelect = document.getElementById("financeNetworkFilter");
+  const storeSelect = document.getElementById("financeStoreFilter");
+  const networks = Array.from(new Set(state.stores.map((store) => store.network || store.name).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  if (networkSelect) {
+    networkSelect.innerHTML = `<option value="">Todas as redes</option>${networks.map((network) => `<option value="${escapeHTML(network)}">${escapeHTML(network)}</option>`).join("")}`;
+    if (networks.some((network) => normalizeText(network) === normalizeText(state.financeNetworkFilter))) {
+      networkSelect.value = state.financeNetworkFilter;
+    } else {
+      state.financeNetworkFilter = "";
+      networkSelect.value = "";
+    }
+  }
+
+  const stores = state.stores
+    .filter((store) => !state.financeNetworkFilter || normalizeText(store.network || store.name) === normalizeText(state.financeNetworkFilter))
+    .sort((a, b) => storeDisplayName(a).localeCompare(storeDisplayName(b), "pt-BR"));
+
+  if (storeSelect) {
+    storeSelect.innerHTML = `<option value="">Todas as lojas</option>${stores.map((store) => `<option value="${escapeHTML(store.id)}">${escapeHTML(storeDisplayName(store))}</option>`).join("")}`;
+    if (stores.some((store) => store.id === state.financeStoreFilter)) {
+      storeSelect.value = state.financeStoreFilter;
+    } else {
+      state.financeStoreFilter = "";
+      storeSelect.value = "";
+    }
+  }
+
+  setText("financeFilterSummary", `${state.period} dias - ${filteredDemands.length} demandas`);
 }
 
 function applyTheme(theme) {
@@ -727,11 +835,13 @@ function renderDemands() {
     const filled = item.assignedDiaristIds.length;
     const options = availableDiaristsForDemand(item);
     const compatibleCount = options.filter((diarist) => isDiaristCompatible(diarist, item)).length;
+    const companyRate = supermarketDailyRate(item);
+    const companyRateLabel = companyRate ? `${formatMoney(companyRate)}/dia` : "Nao configurado";
     return `
       <div class="record-item demand-card">
         <div>
           <strong>${escapeHTML(storeDisplayName(store))}</strong>
-          <span>${escapeHTML(item.date)} · ${escapeHTML(item.sector)} · ${filled}/${item.spots} vaga(s) · ${compatibleCount} compatível(is) disponível(is) · ${formatShort(demandRevenue(item))}</span>
+          <span>${escapeHTML(formatDemandPeriod(item))} - ${escapeHTML(item.sector)} - ${filled}/${item.spots} vagas - ${compatibleCount} compativeis disponiveis - Recebimento ${companyRateLabel} - Paga diarista ${formatMoney(item.workerCost)}</span>
           <div class="assignment-row">
             <div class="chip-list">${renderAssignedDiarists(item)}</div>
             <div class="assign-control">
@@ -763,7 +873,6 @@ function renderStores() {
         <span>${escapeHTML(item.type)} · ${escapeHTML(item.address || item.city || "Sem endereço")} · Responsável: ${escapeHTML(item.owner)}</span>
       </div>
       <div class="record-actions">
-        <span class="health ${normalizeText(item.health)}">${escapeHTML(item.health)}</span>
         ${addressCopyButton(item)}
         ${actionButtons("store", item.id)}
       </div>
@@ -808,25 +917,41 @@ function showCopyFeedback(button, success) {
 }
 
 function renderFinance() {
-  const total = totalFinance();
-  const cost = state.demands.reduce((sum, demand) => sum + demandCost(demand), 0);
-  const average = state.demands.length ? total / state.demands.length : 0;
-  setText("financeTotal", formatShort(total));
-  setText("financeAverage", formatShort(average));
-  renderRecordList("financeList", state.demands, (demand) => {
+  renderFinanceFilters(state.demands);
+  const demands = financeFilteredDemands();
+  renderFinanceFilters(demands);
+  const total = demands.reduce((sum, demand) => sum + demandRevenue(demand), 0);
+  const cost = demands.reduce((sum, demand) => sum + demandCost(demand), 0);
+  const profit = total - cost;
+  const requested = demands.reduce((sum, demand) => sum + demandRequestedCount(demand), 0);
+  const attended = demands.reduce((sum, demand) => sum + demandAttendedCount(demand), 0);
+  const missing = demands.reduce((sum, demand) => sum + demandMissingCount(demand), 0);
+  const margin = total ? (profit / total) * 100 : 0;
+  const average = demands.length ? total / demands.length : 0;
+  setText("financeTotal", formatMoney(total));
+  setText("financeCost", formatMoney(cost));
+  setText("financeProfit", formatMoney(profit));
+  setText("financeMargin", `${margin.toFixed(1).replace(".", ",")}%`);
+  setText("financeRequested", String(requested));
+  setText("financeAttended", String(attended));
+  setText("financeAbsences", String(missing));
+  setText("financeAverage", formatMoney(average));
+  renderRecordList("financeList", demands, (demand) => {
     const store = getStore(demand.storeId);
+    const companyRate = supermarketDailyRate(demand);
+    const companyRateLabel = companyRate ? formatMoney(companyRate) : "Nao configurado";
     return `
       <div class="record-item">
         <div>
           <strong>${escapeHTML(storeDisplayName(store))}</strong>
-          <span>${escapeHTML(demand.sector)} · Receita ${formatShort(demandRevenue(demand))} · Custo ${formatShort(demandCost(demand))} · Margem ${formatShort(demandMargin(demand))}</span>
+          <span>${escapeHTML(formatDemandPeriod(demand))} - ${escapeHTML(demand.sector)} - ${demandRequestedCount(demand)} solicitadas - ${demandAttendedCount(demand)} atendidas - ${demandMissingCount(demand)} pendentes - Recebe ${companyRateLabel}/dia - Receita ${formatMoney(demandRevenue(demand))} - Custo ${formatMoney(demandCost(demand))} - Lucro ${formatMoney(demandMargin(demand))}</span>
         </div>
         <span class="health ${demandMargin(demand) >= 0 ? "alta" : "baixa"}">${escapeHTML(demand.status)}</span>
       </div>
     `;
   });
   const totalLabel = document.querySelector("#financeTotal + small");
-  if (totalLabel) totalLabel.textContent = `custo estimado ${formatShort(cost)}`;
+  if (totalLabel) totalLabel.textContent = `recebimento das empresas`;
 }
 
 function renderSettings() {
@@ -1038,13 +1163,15 @@ function bindForms() {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget));
     const current = state.demands.find((item) => item.id === data.id);
+    const period = normalizeDemandPeriod(data.startDate || data.date, data.endDate);
     const record = {
       id: data.id || uid("demand"),
       storeId: data.storeId,
-      date: data.date,
+      date: period.start,
+      startDate: period.start,
+      endDate: period.end,
       sector: data.sector,
       spots: Number(data.spots || 1),
-      dailyRate: parseMoney(data.dailyRate || 0),
       workerCost: parseMoney(data.workerCost || 0),
       assignedDiaristIds: current?.assignedDiaristIds || [],
       status: current?.status || "Aberta",
@@ -1124,6 +1251,19 @@ function bindEvents() {
   document.getElementById("demandStoreSearch").addEventListener("input", (event) => {
     state.demandStoreQuery = event.target.value;
     renderDemands();
+    if (window.lucide) window.lucide.createIcons();
+  });
+
+  document.getElementById("financeNetworkFilter").addEventListener("change", (event) => {
+    state.financeNetworkFilter = event.target.value;
+    state.financeStoreFilter = "";
+    renderFinance();
+    if (window.lucide) window.lucide.createIcons();
+  });
+
+  document.getElementById("financeStoreFilter").addEventListener("change", (event) => {
+    state.financeStoreFilter = event.target.value;
+    renderFinance();
     if (window.lucide) window.lucide.createIcons();
   });
 

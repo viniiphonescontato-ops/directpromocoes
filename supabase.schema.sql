@@ -24,6 +24,7 @@ create table if not exists public.demandas (
   id text primary key,
   store_id text references public.lojas_redes(id) on delete cascade,
   date date,
+  end_date date,
   sector text,
   spots integer default 1,
   daily_rate numeric(12, 2) default 0,

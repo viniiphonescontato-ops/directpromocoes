@@ -32,7 +32,8 @@
       return {
         id: record.id,
         store_id: record.storeId,
-        date: record.date,
+        date: record.startDate || record.date,
+        end_date: record.endDate || record.startDate || record.date,
         sector: record.sector,
         spots: Number(record.spots || 1),
         daily_rate: Number(record.dailyRate || 0),
@@ -66,6 +67,8 @@
         id: row.id,
         storeId: row.store_id,
         date: row.date,
+        startDate: row.date,
+        endDate: row.end_date || row.date,
         sector: row.sector,
         spots: Number(row.spots || 1),
         dailyRate: Number(row.daily_rate || 0),

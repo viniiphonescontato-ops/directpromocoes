@@ -525,6 +525,11 @@ select {
   color: var(--violet);
 }
 
+.kpi-icon.warning {
+  background: var(--yellow-soft);
+  color: var(--yellow);
+}
+
 .kpi-icon.tasks {
   background: var(--yellow-soft);
   color: var(--yellow);
@@ -899,11 +904,46 @@ canvas {
 }
 
 .finance-grid {
-  grid-template-columns: repeat(2, minmax(190px, 0.32fr)) minmax(0, 1fr);
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
 }
 
+.finance-filter-panel,
 .finance-table-panel {
-  grid-column: span 1;
+  grid-column: 1 / -1;
+}
+
+.finance-filter-panel {
+  padding: 14px;
+}
+
+.finance-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.finance-filters label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.finance-filters select {
+  min-height: 38px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 11px;
+  background: var(--glass-strong);
+  color: var(--ink);
+  outline: 0;
+}
+
+.finance-filters select:focus {
+  border-color: var(--brand-blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-blue) 22%, transparent);
 }
 
 .stack-form {
@@ -944,6 +984,34 @@ canvas {
 
 .inline-control.three-cols {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sector-picker {
+  gap: 9px;
+}
+
+.sector-action-row {
+  grid-template-columns: minmax(0, 1fr) 118px;
+  align-items: stretch;
+}
+
+.sector-action-row .sector-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sector-action-row .sector-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
 }
 
 .stack-form input,
@@ -1330,6 +1398,10 @@ td {
     grid-column: auto;
   }
 
+  .finance-filters {
+    grid-template-columns: 1fr;
+  }
+
   .panel-heading {
     align-items: flex-start;
   }
@@ -1352,6 +1424,10 @@ td {
   }
 
   .inline-control {
+    grid-template-columns: 1fr;
+  }
+
+  .sector-action-row {
     grid-template-columns: 1fr;
   }
 

@@ -23,6 +23,7 @@ Arquivos adicionados:
 - `backend.config.js`: configuração local do projeto Supabase.
 - `backend.config.example.js`: exemplo de configuração.
 - `supabase.schema.sql`: estrutura inicial das tabelas.
+- `supabase.demand-period-migration.sql`: migracao para adicionar data final nas demandas existentes.
 - `supabase.policies.sql`: políticas RLS para liberar leitura e escrita pela chave pública `anon`.
 
 Para conectar:
@@ -30,8 +31,9 @@ Para conectar:
 1. Crie um projeto no Supabase.
 2. Rode o conteúdo de `supabase.schema.sql` no SQL Editor.
 3. Rode o conteúdo de `supabase.policies.sql` no SQL Editor.
-4. Copie a URL do projeto e a chave pública `anon`.
-5. Preencha `backend.config.js`:
+4. Se o banco ja existir, rode tambem `supabase.demand-period-migration.sql`.
+5. Copie a URL do projeto e a chave pública `anon`.
+6. Preencha `backend.config.js`:
 
 ```js
 window.DIRECT_BACKEND_CONFIG = {
