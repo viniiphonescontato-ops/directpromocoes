@@ -1,5 +1,6 @@
 :root {
   color-scheme: light;
+  --font-sans: "Segoe UI", Arial, Helvetica, sans-serif;
   --bg: #edf5ff;
   --surface: rgba(255, 255, 255, 0.72);
   --surface-strong: rgba(248, 251, 255, 0.82);
@@ -84,7 +85,10 @@ body {
     radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--brand-blue) 15%, transparent), transparent 28%),
     linear-gradient(135deg, var(--bg), color-mix(in srgb, var(--bg) 84%, var(--brand-blue) 16%));
   color: var(--ink);
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans);
+  font-variant-ligatures: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
   transition: background 180ms ease, color 180ms ease;
 }
 
@@ -92,6 +96,7 @@ button,
 input,
 select {
   font: inherit;
+  font-family: var(--font-sans);
 }
 
 button {

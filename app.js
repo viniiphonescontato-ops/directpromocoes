@@ -564,7 +564,7 @@ function drawDonutChart(canvasId, legendId, rows, options = {}) {
     ctx.strokeStyle = cssVar("--line");
     ctx.stroke();
     ctx.fillStyle = cssVar("--muted");
-    ctx.font = "800 22px Arial, sans-serif";
+    ctx.font = "800 22px Segoe UI, Arial, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("0", center, center + 8);
     ctx.textAlign = "start";
@@ -587,7 +587,7 @@ function drawDonutChart(canvasId, legendId, rows, options = {}) {
   ctx.fillStyle = cssVar("--surface");
   ctx.fill();
   ctx.fillStyle = cssVar("--ink");
-  ctx.font = "800 22px Arial, sans-serif";
+  ctx.font = "800 22px Segoe UI, Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(options.centerLabel || String(total), center, center + 8);
   ctx.textAlign = "start";
