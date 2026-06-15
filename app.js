@@ -145,7 +145,10 @@ const currencyWithCents = new Intl.NumberFormat("pt-BR", {
 });
 
 function uid(prefix) {
-  return `${prefix}-${crypto.randomUUID()}`;
+  const random = globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${random}`;
 }
 
 function readStore(key, fallback) {
@@ -244,6 +247,44 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
+function repairText(value) {
+  let text = String(value ?? "");
+  text = text
+    .replaceAll("âœ“", "__DIRECT_CHECK__")
+    .replaceAll("â€¢", "__DIRECT_BULLET__")
+    .replaceAll("Â·", "__DIRECT_DOT__")
+    .replaceAll("Ã—", "__DIRECT_TIMES__");
+
+  const restoreSymbols = (current) => current
+    .replaceAll("__DIRECT_CHECK__", "✓")
+    .replaceAll("__DIRECT_BULLET__", "•")
+    .replaceAll("__DIRECT_DOT__", "·")
+    .replaceAll("__DIRECT_TIMES__", "×");
+
+  if (!/[ÃÂ]/.test(text)) return restoreSymbols(text);
+  try {
+    const bytes = Uint8Array.from(text, (char) => char.charCodeAt(0) & 0xff);
+    const repaired = new TextDecoder("utf-8").decode(bytes);
+    return restoreSymbols(repaired.includes("�") ? text : repaired);
+  } catch {
+    return restoreSymbols(text);
+  }
+}
+
+function normalizeDemandStatus(status) {
+  const normalized = normalizeText(repairText(status));
+  if (normalized.includes("concluida")) return "Concluída";
+  if (normalized.includes("escala")) return "Em escala";
+  return "Aberta";
+}
+
+function normalizeDiaristStatus(status) {
+  const normalized = normalizeText(repairText(status));
+  if (normalized.includes("inativa")) return "Inativa";
+  if (normalized.includes("reserva")) return "Reserva";
+  return "Ativa";
+}
+
 function normalizeTextForSeed(value) {
   return String(value || "")
     .normalize("NFD")
@@ -282,6 +323,7 @@ function mergeRequiredStores(stores) {
 function mergeRequiredSectors(sectors) {
   const cleaned = sectors
     .map((sector) => (typeof sector === "string" ? sector : sector?.sector || sector?.name || ""))
+    .map(repairText)
     .map((sector) => sector.trim())
     .filter(isValidSectorName);
   const merged = [...new Set(cleaned)];
@@ -297,7 +339,7 @@ function mergeRequiredSectors(sectors) {
 }
 
 function parseSectorList(value) {
-  return String(value || "")
+  return repairText(value)
     .split(",")
     .map((sector) => sector.trim())
     .filter(Boolean);
@@ -332,24 +374,24 @@ function createSector(sector) {
 function normalizeStores(stores) {
   return stores.map((store) => ({
     id: store.id || uid("store"),
-    name: store.name || "Loja sem nome",
-    network: store.network || (store.type === "Rede" ? store.name : ""),
-    type: store.type || "Loja",
-    owner: store.owner || "Direct Promoções",
-    city: store.city || "",
-    address: store.address || "",
-    health: store.health || "Alta",
+    name: repairText(store.name || "Loja sem nome"),
+    network: repairText(store.network || (store.type === "Rede" ? store.name : "")),
+    type: repairText(store.type || "Loja"),
+    owner: repairText(store.owner || "Direct Promoções"),
+    city: repairText(store.city || ""),
+    address: repairText(store.address || ""),
+    health: repairText(store.health || "Alta"),
   }));
 }
 
 function normalizeDiarists(diarists) {
   return diarists.map((diarist) => ({
     id: diarist.id || uid("diarist"),
-    name: diarist.name || "Diarista sem nome",
-    phone: diarist.phone || "",
-    cpf: diarist.cpf || "",
-    sectors: diarist.sectors || "",
-    status: diarist.status || "Ativa",
+    name: repairText(diarist.name || "Diarista sem nome"),
+    phone: repairText(diarist.phone || ""),
+    cpf: repairText(diarist.cpf || ""),
+    sectors: repairText(diarist.sectors || ""),
+    status: normalizeDiaristStatus(diarist.status),
   }));
 }
 
@@ -364,11 +406,11 @@ function normalizeDemands(demands) {
       date: startDate,
       startDate,
       endDate,
-      sector: demand.sector || requiredSectors[0],
-      spots: Number(demand.spots || 1),
-      workerCost: parseMoney(demand.workerCost || 120),
+      sector: repairText(demand.sector || requiredSectors[0]),
+      spots: positiveInt(demand.spots, 1),
+      workerCost: nonNegativeMoney(demand.workerCost || 120),
       assignedDiaristIds: Array.isArray(demand.assignedDiaristIds) ? demand.assignedDiaristIds : [],
-      status: demand.status || "Aberta",
+      status: normalizeDemandStatus(demand.status),
     };
   });
 }
@@ -376,9 +418,9 @@ function normalizeDemands(demands) {
 function normalizeSectorRates(rates) {
   const normalized = rates.map((item) => ({
     id: item.id || uid("rate"),
-    sector: typeof item.sector === "string" ? item.sector : String(item.sector?.sector || item.sector?.name || ""),
-    minValue: parseMoney(item.minValue ?? 80),
-    maxValue: parseMoney(item.maxValue ?? 90),
+    sector: repairText(typeof item.sector === "string" ? item.sector : String(item.sector?.sector || item.sector?.name || "")),
+    minValue: nonNegativeMoney(item.minValue ?? 80),
+    maxValue: nonNegativeMoney(item.maxValue ?? 90),
   })).filter((item) => item.sector);
 
   const existing = new Set(normalized.map((item) => normalizeText(item.sector)));
@@ -394,8 +436,8 @@ function normalizeSectorRates(rates) {
 function normalizeCompanyRates(rates) {
   const normalized = rates.map((item) => ({
     id: item.id || uid("company-rate"),
-    company: typeof item.company === "string" ? item.company : String(item.company?.network || item.company?.name || ""),
-    value: parseMoney(item.value ?? 0),
+    company: repairText(typeof item.company === "string" ? item.company : String(item.company?.network || item.company?.name || "")),
+    value: nonNegativeMoney(item.value ?? 0),
   })).filter((item) => item.company);
 
   const existing = new Set(normalized.map((item) => normalizeText(item.company)));
@@ -422,6 +464,15 @@ function parseMoney(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function nonNegativeMoney(value) {
+  return Math.max(0, parseMoney(value));
+}
+
+function positiveInt(value, fallback = 1) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function setText(id, value) {
   const element = document.getElementById(id);
   if (element) element.textContent = value;
@@ -445,11 +496,11 @@ function storeDisplayName(store) {
 }
 
 function demandRevenue(demand) {
-  return Number(demand.spots || 0) * demandDays(demand) * supermarketDailyRate(demand);
+  return positiveInt(demand.spots, 0) * demandDays(demand) * supermarketDailyRate(demand);
 }
 
 function demandCost(demand) {
-  return demandRequestedCount(demand) * parseMoney(demand.workerCost || 0);
+  return demandRequestedCount(demand) * nonNegativeMoney(demand.workerCost || 0);
 }
 
 function demandMargin(demand) {
@@ -457,7 +508,7 @@ function demandMargin(demand) {
 }
 
 function demandRequestedCount(demand) {
-  return Number(demand.spots || 0) * demandDays(demand);
+  return positiveInt(demand.spots, 0) * demandDays(demand);
 }
 
 function demandAttendedCount(demand) {
@@ -531,33 +582,31 @@ function financeFilteredDemands() {
   });
 }
 
-function renderFinanceFilters(filteredDemands) {
-  const networkSelect = document.getElementById("financeNetworkFilter");
-  const storeSelect = document.getElementById("financeStoreFilter");
+function normalizeFinanceFilterState() {
   const networks = Array.from(new Set(state.stores.map((store) => store.network || store.name).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));
-
-  if (networkSelect) {
-    networkSelect.innerHTML = `<option value="">Todas as redes</option>${networks.map((network) => `<option value="${escapeHTML(network)}">${escapeHTML(network)}</option>`).join("")}`;
-    if (networks.some((network) => normalizeText(network) === normalizeText(state.financeNetworkFilter))) {
-      networkSelect.value = state.financeNetworkFilter;
-    } else {
-      state.financeNetworkFilter = "";
-      networkSelect.value = "";
-    }
+  if (state.financeNetworkFilter && !networks.some((network) => normalizeText(network) === normalizeText(state.financeNetworkFilter))) {
+    state.financeNetworkFilter = "";
   }
-
   const stores = state.stores
     .filter((store) => !state.financeNetworkFilter || normalizeText(store.network || store.name) === normalizeText(state.financeNetworkFilter))
     .sort((a, b) => storeDisplayName(a).localeCompare(storeDisplayName(b), "pt-BR"));
+  if (state.financeStoreFilter && !stores.some((store) => store.id === state.financeStoreFilter)) {
+    state.financeStoreFilter = "";
+  }
+  return { networks, stores };
+}
 
+function renderFinanceFilters(filteredDemands) {
+  const networkSelect = document.getElementById("financeNetworkFilter");
+  const storeSelect = document.getElementById("financeStoreFilter");
+  const { networks, stores } = normalizeFinanceFilterState();
+  if (networkSelect) {
+    networkSelect.innerHTML = `<option value="">Todas as redes</option>${networks.map((network) => `<option value="${escapeHTML(network)}">${escapeHTML(network)}</option>`).join("")}`;
+    networkSelect.value = state.financeNetworkFilter;
+  }
   if (storeSelect) {
     storeSelect.innerHTML = `<option value="">Todas as lojas</option>${stores.map((store) => `<option value="${escapeHTML(store.id)}">${escapeHTML(storeDisplayName(store))}</option>`).join("")}`;
-    if (stores.some((store) => store.id === state.financeStoreFilter)) {
-      storeSelect.value = state.financeStoreFilter;
-    } else {
-      state.financeStoreFilter = "";
-      storeSelect.value = "";
-    }
+    storeSelect.value = state.financeStoreFilter;
   }
 
   setText("financeFilterSummary", `${state.period} dias - ${filteredDemands.length} demandas`);
@@ -577,7 +626,7 @@ function applyTheme(theme) {
   }
 
   const meta = document.getElementById("themeColorMeta");
-  if (meta) meta.setAttribute("content", cssVar("--sidebar-bg") || (state.theme === "dark" ? "#f7fbff" : "#051a46"));
+  if (meta) meta.setAttribute("content", cssVar("--sidebar-bg") || "#051a46");
 }
 
 function switchView(view) {
@@ -752,10 +801,10 @@ function matchesQuery(item) {
   return Object.values(item).some((value) => normalizeText(Array.isArray(value) ? value.join(" ") : value).includes(query));
 }
 
-function renderRecordList(containerId, records, template) {
+function renderRecordList(containerId, records, template, options = {}) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  const filtered = records.filter(matchesQuery);
+  const filtered = options.skipGlobalQuery ? records : records.filter(matchesQuery);
   container.innerHTML = filtered.length
     ? filtered.map(template).join("")
     : `<div class="record-item"><div><strong>Nenhum registro encontrado</strong><span>A busca atual não retornou resultados.</span></div></div>`;
@@ -824,12 +873,15 @@ function renderAssignedDiarists(demand) {
 }
 
 function renderDemands() {
-  const open = state.demands.filter((item) => item.status !== "Concluída").length;
-  const filteredDemands = state.demands.filter((item) => {
+  const openDemands = state.demands.filter((item) => item.status !== "Concluída");
+  const filteredDemands = openDemands.filter((item) => {
     const store = getStore(item.storeId);
-    return normalizeText(storeDisplayName(store)).includes(normalizeText(state.demandStoreQuery));
+    const haystack = `${storeDisplayName(store)} ${item.sector} ${item.status} ${formatDemandPeriod(item)}`;
+    const storeQuery = normalizeText(state.demandStoreQuery);
+    const globalQuery = normalizeText(state.query);
+    return (!storeQuery || normalizeText(storeDisplayName(store)).includes(storeQuery)) && (!globalQuery || normalizeText(haystack).includes(globalQuery));
   });
-  setText("demandCount", `${filteredDemands.length}/${open} abertas`);
+  setText("demandCount", `${filteredDemands.length}/${openDemands.length} abertas`);
   renderRecordList("demandList", filteredDemands, (item) => {
     const store = getStore(item.storeId);
     const filled = item.assignedDiaristIds.length;
@@ -861,7 +913,7 @@ function renderDemands() {
         </div>
       </div>
     `;
-  });
+  }, { skipGlobalQuery: true });
 }
 
 function renderStores() {
@@ -883,8 +935,12 @@ function renderStores() {
 async function copyText(text) {
   if (!text) return false;
   if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return true;
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fallback below handles file:// and older mobile browsers.
+    }
   }
 
   const textarea = document.createElement("textarea");
@@ -917,7 +973,7 @@ function showCopyFeedback(button, success) {
 }
 
 function renderFinance() {
-  renderFinanceFilters(state.demands);
+  normalizeFinanceFilterState();
   const demands = financeFilteredDemands();
   renderFinanceFilters(demands);
   const total = demands.reduce((sum, demand) => sum + demandRevenue(demand), 0);
@@ -949,7 +1005,7 @@ function renderFinance() {
         <span class="health ${demandMargin(demand) >= 0 ? "alta" : "baixa"}">${escapeHTML(demand.status)}</span>
       </div>
     `;
-  });
+  }, { skipGlobalQuery: true });
   const totalLabel = document.querySelector("#financeTotal + small");
   if (totalLabel) totalLabel.textContent = `recebimento das empresas`;
 }
@@ -1056,10 +1112,9 @@ function renderDiaristSectorPicker() {
     : `<span class="muted-line">Nenhum setor selecionado.</span>`;
 }
 
-function resetForm(formId) {
+function clearFormState(formId) {
   const form = document.getElementById(formId);
   if (!form) return;
-  form.reset();
   const id = form.querySelector('[name="id"]');
   if (id) id.value = "";
   if (formId === "diaristForm") {
@@ -1067,6 +1122,13 @@ function resetForm(formId) {
     syncDiaristSectorInput();
     renderDiaristSectorPicker();
   }
+}
+
+function resetForm(formId) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  form.reset();
+  clearFormState(formId);
 }
 
 function fillForm(formId, data) {
@@ -1149,6 +1211,11 @@ function exportCsv() {
 }
 
 function bindForms() {
+  ["diaristForm", "demandForm", "storeForm", "sectorRateForm", "companyRateForm"].forEach((formId) => {
+    const form = document.getElementById(formId);
+    form?.addEventListener("reset", () => window.setTimeout(() => clearFormState(formId), 0));
+  });
+
   document.getElementById("diaristForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget));
@@ -1171,8 +1238,8 @@ function bindForms() {
       startDate: period.start,
       endDate: period.end,
       sector: data.sector,
-      spots: Number(data.spots || 1),
-      workerCost: parseMoney(data.workerCost || 0),
+      spots: positiveInt(data.spots, 1),
+      workerCost: nonNegativeMoney(data.workerCost || 0),
       assignedDiaristIds: current?.assignedDiaristIds || [],
       status: current?.status || "Aberta",
     };
@@ -1195,8 +1262,8 @@ function bindForms() {
   document.getElementById("sectorRateForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget));
-    const minValue = parseMoney(data.minValue || 0);
-    const maxValue = parseMoney(data.maxValue || 0);
+    const minValue = nonNegativeMoney(data.minValue || 0);
+    const maxValue = nonNegativeMoney(data.maxValue || 0);
     const record = {
       id: data.id || uid("rate"),
       sector: data.sector,
@@ -1215,7 +1282,7 @@ function bindForms() {
     const record = {
       id: data.id || uid("company-rate"),
       company: data.company,
-      value: parseMoney(data.value || 0),
+      value: nonNegativeMoney(data.value || 0),
     };
     state.companyRates = data.id ? state.companyRates.map((item) => (item.id === data.id ? record : item)) : [record, ...state.companyRates.filter((item) => normalizeText(item.company) !== normalizeText(record.company))];
     writeStore(storageKeys.companyRates, state.companyRates);
