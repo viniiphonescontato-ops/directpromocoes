@@ -4,8 +4,8 @@
   "description": "Gestao operacional e financeira da Direct Promocoes.",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#edf5ff",
-  "theme_color": "#051a46",
+  "background_color": "#f4f8fb",
+  "theme_color": "#04163d",
   "icons": [
     {
       "src": "assets/favicon.png",

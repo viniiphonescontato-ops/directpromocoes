@@ -20,6 +20,7 @@ const backendResourceByStorageKey = {
 
 let backendReady = false;
 const backendSyncTimers = {};
+const backendPendingPrefix = "direct_pending_";
 
 const requiredSectors = [
   "Operador de caixa",
@@ -129,7 +130,7 @@ state.demands = normalizeDemands(state.demands);
 state.sectors = mergeRequiredSectors(state.sectors);
 state.sectorRates = normalizeSectorRates(state.sectorRates);
 state.companyRates = normalizeCompanyRates(state.companyRates);
-persistCoreData();
+persistCoreData({ pending: false });
 
 const currency = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -160,18 +161,52 @@ function readStore(key, fallback) {
   }
 }
 
-function writeStore(key, value) {
+function writeLocalStore(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function writeStore(key, value, options = {}) {
+  const { pending = true } = options;
+  writeLocalStore(key, value);
+  const resource = backendResourceByStorageKey[key];
+  if (pending && resource) markBackendPending(resource, value);
   queueBackendSync(key, value);
 }
 
-function persistCoreData() {
-  writeStore(storageKeys.stores, state.stores);
-  writeStore(storageKeys.diarists, state.diarists);
-  writeStore(storageKeys.demands, state.demands);
-  writeStore(storageKeys.sectors, state.sectors);
-  writeStore(storageKeys.sectorRates, state.sectorRates);
-  writeStore(storageKeys.companyRates, state.companyRates);
+function persistCoreData(options = {}) {
+  writeStore(storageKeys.stores, state.stores, options);
+  writeStore(storageKeys.diarists, state.diarists, options);
+  writeStore(storageKeys.demands, state.demands, options);
+  writeStore(storageKeys.sectors, state.sectors, options);
+  writeStore(storageKeys.sectorRates, state.sectorRates, options);
+  writeStore(storageKeys.companyRates, state.companyRates, options);
+}
+
+function pendingKey(resource) {
+  return `${backendPendingPrefix}${resource}`;
+}
+
+function readBackendPending(resource) {
+  try {
+    return JSON.parse(localStorage.getItem(pendingKey(resource)) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function markBackendPending(resource, records) {
+  writeLocalStore(pendingKey(resource), {
+    records: Array.isArray(records) ? records : [],
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+function clearBackendPending(resource, syncedRecords) {
+  const pending = readBackendPending(resource);
+  if (!pending) return;
+  if (JSON.stringify(pending.records || []) === JSON.stringify(syncedRecords || [])) {
+    localStorage.removeItem(pendingKey(resource));
+  }
 }
 
 function getResourceCollection(resource) {
@@ -214,6 +249,7 @@ async function syncResourceToBackend(resource, records) {
     return id && !currentIds.has(id) ? backend.remove(resource, id) : Promise.resolve();
   }));
   await Promise.all(current.map((record) => backend.upsert(resource, record)));
+  clearBackendPending(resource, current);
 }
 
 async function hydrateFromBackend() {
@@ -222,6 +258,13 @@ async function hydrateFromBackend() {
 
   const resources = ["stores", "diarists", "sectors", "sectorRates", "companyRates", "demands"];
   for (const resource of resources) {
+    const pending = readBackendPending(resource);
+    if (pending?.records) {
+      replaceResourceCollection(resource, pending.records);
+      await syncResourceToBackend(resource, getResourceCollection(resource));
+      continue;
+    }
+
     const remote = await backend.list(resource);
     if (remote?.length) {
       replaceResourceCollection(resource, remote);
@@ -231,7 +274,7 @@ async function hydrateFromBackend() {
   }
 
   backendReady = false;
-  persistCoreData();
+  persistCoreData({ pending: false });
   backendReady = true;
   await Promise.all(resources.map((resource) => syncResourceToBackend(resource, getResourceCollection(resource))));
 }
