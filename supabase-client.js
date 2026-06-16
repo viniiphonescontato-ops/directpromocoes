@@ -108,7 +108,13 @@
     if (!enabled) return null;
     const table = tableMap[resource];
     if (!table) throw new Error(`Recurso sem tabela Supabase: ${resource}`);
-    const { data, error } = await client.from(table).upsert(serialize(resource, record)).select().single();
+    const payload = serialize(resource, record);
+    let { data, error } = await client.from(table).upsert(payload).select().single();
+    if (resource === "demands" && error?.code === "PGRST204" && String(error.message || "").includes("end_date")) {
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.end_date;
+      ({ data, error } = await client.from(table).upsert(fallbackPayload).select().single());
+    }
     if (error) throw error;
     return deserialize(resource, data);
   }
@@ -122,6 +128,20 @@
     return true;
   }
 
+  async function signIn(email, password) {
+    if (!enabled) return null;
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
+  }
+
+  async function signOut() {
+    if (!enabled) return null;
+    const { error } = await client.auth.signOut();
+    if (error) throw error;
+    return true;
+  }
+
   window.directBackend = {
     provider: "supabase",
     enabled,
@@ -131,5 +151,7 @@
     list,
     upsert,
     remove,
+    signIn,
+    signOut,
   };
 })();

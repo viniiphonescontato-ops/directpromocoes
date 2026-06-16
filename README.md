@@ -25,6 +25,7 @@ Arquivos adicionados:
 - `supabase.schema.sql`: estrutura inicial das tabelas.
 - `supabase.demand-period-migration.sql`: migracao para adicionar data final nas demandas existentes.
 - `supabase.policies.sql`: políticas RLS para liberar leitura e escrita pela chave pública `anon`.
+- `supabase.secure-auth-policies.sql`: políticas RLS recomendadas para liberar leitura e escrita somente para usuarios autenticados.
 
 Para conectar:
 
@@ -43,6 +44,22 @@ window.DIRECT_BACKEND_CONFIG = {
 ```
 
 O app está em modo híbrido: abre com `localStorage`, carrega dados do Supabase quando disponível e sincroniza alterações de cadastros, demandas, lojas, setores e valores. Se uma tabela estiver vazia, o app envia a base local atual para iniciar o banco.
+
+Se as demandas salvarem, mas a data final voltar igual a data inicial, rode `supabase.demand-period-migration.sql` no SQL Editor. Essa migration adiciona a coluna `end_date` usada para periodos com mais de um dia.
+
+## Acesso administrativo
+
+O sistema abre com login interno e sem opcao de criar conta.
+
+- Login: `marcosvinidirect`
+- Senha: definida no app apenas como hash SHA-256, nao em texto puro.
+
+Para seguranca real no Supabase:
+
+1. Crie um usuario em Authentication > Users com o email `marcosvinidirect@direct.local` e a mesma senha administrativa.
+2. Depois disso, rode `supabase.secure-auth-policies.sql` no SQL Editor.
+
+Nao rode `supabase.secure-auth-policies.sql` antes de criar esse usuario, pois as tabelas deixam de aceitar escrita anonima e o app nao conseguira salvar no banco.
 
 As políticas atuais liberam CRUD para a chave pública `anon`, adequado para um protótipo sem login. Para produção, o ideal é adicionar autenticação e restringir as políticas por usuário ou equipe.
 

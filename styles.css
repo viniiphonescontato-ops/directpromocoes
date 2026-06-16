@@ -119,6 +119,65 @@ button {
   cursor: pointer;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+.login-screen {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 22px;
+}
+
+.login-card {
+  width: min(430px, 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 22px;
+  background: var(--glass-bg);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.login-brand h1 {
+  font-size: 26px;
+}
+
+.login-brand-mark {
+  flex: 0 0 auto;
+  width: 58px;
+  height: 58px;
+}
+
+.login-copy {
+  margin-bottom: 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.login-form {
+  gap: 12px;
+}
+
+.login-error {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--line));
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: 86px minmax(0, 1fr);
@@ -275,6 +334,10 @@ button {
 
 .theme-toggle {
   margin-top: auto;
+}
+
+.logout-toggle {
+  margin-top: -20px;
 }
 
 .nav-item:hover span,
@@ -1331,7 +1394,7 @@ td {
     top: auto;
     z-index: 1000;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-columns: minmax(0, 1fr) 44px 44px;
     align-items: center;
     height: calc(68px + env(safe-area-inset-bottom));
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
@@ -1364,6 +1427,11 @@ td {
   }
 
   .theme-toggle {
+    margin-top: 0;
+    width: 44px;
+  }
+
+  .logout-toggle {
     margin-top: 0;
     width: 44px;
   }
@@ -1567,6 +1635,22 @@ td {
 @media (max-width: 430px) {
   .dashboard {
     padding: 14px 10px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .login-screen {
+    padding: 14px;
+  }
+
+  .login-card {
+    padding: 16px;
+  }
+
+  .login-brand {
+    gap: 10px;
+  }
+
+  .login-brand h1 {
+    font-size: 22px;
   }
 
   .topbar {

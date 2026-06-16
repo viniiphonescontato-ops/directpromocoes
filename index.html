@@ -20,7 +20,28 @@
     <script src="app.js" defer></script>
   </head>
   <body>
-    <div class="app-shell">
+    <section id="loginScreen" class="login-screen" aria-label="Acesso restrito">
+      <div class="login-card">
+        <div class="login-brand">
+          <span class="brand-mark login-brand-mark">
+            <img src="assets/favicon.png?v=direct-login-20260616" onerror="this.onerror=null;this.src='assets/direct-promocoes-logo.jpeg';" alt="Direct Promocoes" />
+          </span>
+          <div>
+            <p class="eyebrow">Direct Secure</p>
+            <h1>Entrar no sistema</h1>
+          </div>
+        </div>
+        <p class="login-copy">Acesso interno da Direct Promocoes. Use seu login administrativo para continuar.</p>
+        <form id="loginForm" class="stack-form login-form" autocomplete="on">
+          <label>Login<input id="loginUser" name="user" autocomplete="username" required placeholder="Seu login" /></label>
+          <label>Senha<input id="loginPassword" name="password" autocomplete="current-password" required placeholder="Sua senha" type="password" /></label>
+          <p id="loginError" class="login-error" role="alert" hidden>Login ou senha incorretos.</p>
+          <button class="primary-btn" type="submit"><i data-lucide="log-in"></i>Entrar</button>
+        </form>
+      </div>
+    </section>
+
+    <div id="appShell" class="app-shell" hidden>
       <aside class="sidebar" aria-label="Navegacao principal">
         <a class="brand" href="#" aria-label="Direct Promocoes">
           <span class="brand-mark">
@@ -62,6 +83,11 @@
         <button id="themeToggle" class="nav-item theme-toggle" type="button" aria-label="Alternar para modo escuro" aria-pressed="false">
           <i data-lucide="moon"></i>
           <span>Modo escuro</span>
+        </button>
+
+        <button id="logoutButton" class="nav-item logout-toggle" type="button" aria-label="Sair do sistema">
+          <i data-lucide="log-out"></i>
+          <span>Sair</span>
         </button>
 
         <div class="sidebar-panel">

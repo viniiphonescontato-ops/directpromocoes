@@ -1,4 +1,5 @@
 const storageKeys = {
+  session: "direct_admin_session",
   theme: "direct_theme",
   settings: "direct_settings",
   diarists: "direct_diaristas",
@@ -19,8 +20,15 @@ const backendResourceByStorageKey = {
 };
 
 let backendReady = false;
+let appStarted = false;
 const backendSyncTimers = {};
 const backendPendingPrefix = "direct_pending_";
+const backendDeletedPrefix = "direct_deleted_";
+const adminAccess = {
+  user: "marcosvinidirect",
+  email: "marcosvinidirect@direct.local",
+  passwordHash: "91e711212546cf9118d590e2c07b82a84528440e8ef03bba27667f811c2fa2bd",
+};
 
 const requiredSectors = [
   "Operador de caixa",
@@ -152,6 +160,59 @@ function uid(prefix) {
   return `${prefix}-${random}`;
 }
 
+async function sha256Hex(value) {
+  if (!globalThis.crypto?.subtle) return "";
+  const buffer = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value || "")));
+  return Array.from(new Uint8Array(buffer)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function isAuthenticated() {
+  return sessionStorage.getItem(storageKeys.session) === adminAccess.passwordHash;
+}
+
+function setLoginError(message) {
+  const error = document.getElementById("loginError");
+  if (!error) return;
+  error.textContent = message;
+  error.hidden = !message;
+}
+
+function showLogin() {
+  document.getElementById("loginScreen")?.removeAttribute("hidden");
+  document.getElementById("appShell")?.setAttribute("hidden", "");
+  document.getElementById("loginUser")?.focus();
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function showApp() {
+  document.getElementById("loginScreen")?.setAttribute("hidden", "");
+  document.getElementById("appShell")?.removeAttribute("hidden");
+}
+
+function bindAuth() {
+  const form = document.getElementById("loginForm");
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(event.currentTarget));
+    const user = normalizeText(data.user).trim();
+    const passwordHash = await sha256Hex(data.password);
+    if (user === adminAccess.user && passwordHash === adminAccess.passwordHash) {
+      if (window.directBackend?.enabled && window.directBackend?.signIn) {
+        try {
+          await window.directBackend.signIn(adminAccess.email, data.password);
+        } catch (error) {
+          console.warn("Login local aprovado, mas o Supabase Auth ainda nao aceitou este usuario.", error);
+        }
+      }
+      sessionStorage.setItem(storageKeys.session, adminAccess.passwordHash);
+      setLoginError("");
+      startApp();
+      return;
+    }
+    setLoginError("Login ou senha incorretos.");
+  });
+}
+
 function readStore(key, fallback) {
   try {
     const saved = localStorage.getItem(key);
@@ -186,11 +247,41 @@ function pendingKey(resource) {
   return `${backendPendingPrefix}${resource}`;
 }
 
+function deletedKey(resource) {
+  return `${backendDeletedPrefix}${resource}`;
+}
+
 function readBackendPending(resource) {
   try {
     return JSON.parse(localStorage.getItem(pendingKey(resource)) || "null");
   } catch {
     return null;
+  }
+}
+
+function readBackendDeleted(resource) {
+  try {
+    const deleted = JSON.parse(localStorage.getItem(deletedKey(resource)) || "[]");
+    return Array.isArray(deleted) ? deleted : [];
+  } catch {
+    return [];
+  }
+}
+
+function markBackendDeleted(resource, id) {
+  if (!resource || !id) return;
+  const deleted = new Set(readBackendDeleted(resource));
+  deleted.add(id);
+  writeLocalStore(deletedKey(resource), Array.from(deleted));
+  syncDeletedToBackend(resource).catch((error) => console.warn(`Falha ao remover ${resource} no Supabase`, error));
+}
+
+function clearBackendDeleted(resource, id) {
+  const remaining = readBackendDeleted(resource).filter((item) => item !== id);
+  if (remaining.length) {
+    writeLocalStore(deletedKey(resource), remaining);
+  } else {
+    localStorage.removeItem(deletedKey(resource));
   }
 }
 
@@ -229,6 +320,16 @@ function replaceResourceCollection(resource, records) {
   if (resource === "companyRates") state.companyRates = normalizeCompanyRates(records);
 }
 
+function resourceForEntity(entity) {
+  return {
+    diarist: "diarists",
+    demand: "demands",
+    store: "stores",
+    sectorRate: "sectorRates",
+    companyRate: "companyRates",
+  }[entity];
+}
+
 function queueBackendSync(key, value) {
   const resource = backendResourceByStorageKey[key];
   if (!backendReady || !resource || !window.directBackend?.enabled) return;
@@ -242,14 +343,19 @@ async function syncResourceToBackend(resource, records) {
   const backend = window.directBackend;
   if (!backend?.enabled) return;
   const current = Array.isArray(records) ? records : [];
-  const remote = await backend.list(resource);
-  const currentIds = new Set(current.map((record) => backend.resolveId(resource, record)).filter(Boolean));
-  await Promise.all((remote || []).map((record) => {
-    const id = backend.resolveId(resource, record);
-    return id && !currentIds.has(id) ? backend.remove(resource, id) : Promise.resolve();
-  }));
   await Promise.all(current.map((record) => backend.upsert(resource, record)));
+  await syncDeletedToBackend(resource);
   clearBackendPending(resource, current);
+}
+
+async function syncDeletedToBackend(resource) {
+  const backend = window.directBackend;
+  if (!backendReady || !backend?.enabled) return;
+  const deletedIds = readBackendDeleted(resource);
+  for (const id of deletedIds) {
+    await backend.remove(resource, id);
+    clearBackendDeleted(resource, id);
+  }
 }
 
 async function hydrateFromBackend() {
@@ -277,6 +383,7 @@ async function hydrateFromBackend() {
   persistCoreData({ pending: false });
   backendReady = true;
   await Promise.all(resources.map((resource) => syncResourceToBackend(resource, getResourceCollection(resource))));
+  await Promise.all(resources.map((resource) => syncDeletedToBackend(resource)));
 }
 
 function cssVar(name) {
@@ -1206,25 +1313,32 @@ function deleteRecord(entity, id) {
   if (entity === "diarist") {
     state.diarists = state.diarists.filter((item) => item.id !== id);
     state.demands = state.demands.map((demand) => ({ ...demand, assignedDiaristIds: demand.assignedDiaristIds.filter((diaristId) => diaristId !== id) }));
+    markBackendDeleted(resourceForEntity(entity), id);
     writeStore(storageKeys.diarists, state.diarists);
     writeStore(storageKeys.demands, state.demands);
   }
   if (entity === "demand") {
     state.demands = state.demands.filter((item) => item.id !== id);
+    markBackendDeleted(resourceForEntity(entity), id);
     writeStore(storageKeys.demands, state.demands);
   }
   if (entity === "store") {
+    const removedDemandIds = state.demands.filter((demand) => demand.storeId === id).map((demand) => demand.id);
     state.stores = state.stores.filter((item) => item.id !== id);
     state.demands = state.demands.filter((demand) => demand.storeId !== id);
+    markBackendDeleted(resourceForEntity(entity), id);
+    removedDemandIds.forEach((demandId) => markBackendDeleted("demands", demandId));
     writeStore(storageKeys.stores, state.stores);
     writeStore(storageKeys.demands, state.demands);
   }
   if (entity === "sectorRate") {
     state.sectorRates = state.sectorRates.filter((item) => item.id !== id);
+    markBackendDeleted(resourceForEntity(entity), id);
     writeStore(storageKeys.sectorRates, state.sectorRates);
   }
   if (entity === "companyRate") {
     state.companyRates = state.companyRates.filter((item) => item.id !== id);
+    markBackendDeleted(resourceForEntity(entity), id);
     writeStore(storageKeys.companyRates, state.companyRates);
   }
   render();
@@ -1382,6 +1496,12 @@ function bindEvents() {
     render();
   });
 
+  document.getElementById("logoutButton")?.addEventListener("click", () => {
+    sessionStorage.removeItem(storageKeys.session);
+    window.directBackend?.signOut?.().catch((error) => console.warn("Falha ao encerrar sessao Supabase.", error));
+    window.location.reload();
+  });
+
   document.addEventListener("click", (event) => {
     const actionButton = event.target.closest("[data-action]");
     if (!actionButton) return;
@@ -1457,11 +1577,23 @@ function render() {
   if (window.lucide) window.lucide.createIcons();
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  applyTheme(state.theme || state.settings.defaultTheme);
+function startApp() {
+  if (appStarted) return;
+  appStarted = true;
+  showApp();
   bindEvents();
   switchView("dashboard");
   hydrateFromBackend()
     .then(() => render())
     .catch((error) => console.warn("Falha ao carregar dados do Supabase. Usando dados locais.", error));
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  applyTheme(state.theme || state.settings.defaultTheme);
+  bindAuth();
+  if (isAuthenticated()) {
+    startApp();
+  } else {
+    showLogin();
+  }
 });
