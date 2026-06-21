@@ -22,19 +22,16 @@ Arquivos adicionados:
 - `supabase-client.js`: cliente opcional do Supabase.
 - `backend.config.js`: configuração local do projeto Supabase.
 - `backend.config.example.js`: exemplo de configuração.
-- `supabase.schema.sql`: estrutura inicial das tabelas.
-- `supabase.demand-period-migration.sql`: migracao para adicionar data final nas demandas existentes.
-- `supabase.policies.sql`: políticas RLS para liberar leitura e escrita pela chave pública `anon`.
-- `supabase.secure-auth-policies.sql`: políticas RLS recomendadas para liberar leitura e escrita somente para usuarios autenticados.
+- `supabase.full-schema.sql`: instalação completa recomendada, com tabelas, colunas, índices e RLS.
+- Os demais arquivos `supabase.*.sql` são migrations antigas mantidas para referência e manutenção pontual.
 
 Para conectar:
 
 1. Crie um projeto no Supabase.
-2. Rode o conteúdo de `supabase.schema.sql` no SQL Editor.
-3. Rode o conteúdo de `supabase.policies.sql` no SQL Editor.
-4. Se o banco ja existir, rode tambem `supabase.demand-period-migration.sql`.
-5. Copie a URL do projeto e a chave pública `anon`.
-6. Preencha `backend.config.js`:
+2. Crie o usuário administrativo em Authentication > Users.
+3. Rode apenas o conteúdo de `supabase.full-schema.sql` no SQL Editor.
+4. Copie a URL do projeto e a chave pública `anon`.
+5. Preencha `backend.config.js`:
 
 ```js
 window.DIRECT_BACKEND_CONFIG = {
@@ -45,23 +42,34 @@ window.DIRECT_BACKEND_CONFIG = {
 
 O app está em modo híbrido: abre com `localStorage`, carrega dados do Supabase quando disponível e sincroniza alterações de cadastros, demandas, lojas, setores e valores. Se uma tabela estiver vazia, o app envia a base local atual para iniciar o banco.
 
-Se as demandas salvarem, mas a data final voltar igual a data inicial, rode `supabase.demand-period-migration.sql` no SQL Editor. Essa migration adiciona a coluna `end_date` usada para periodos com mais de um dia.
+O schema completo também pode ser executado sobre uma instalação existente. Ele usa comandos idempotentes e adiciona `neighborhood`, `end_date` e `start_time` quando estiverem ausentes.
 
 ## Acesso administrativo
 
 O sistema abre com login interno e sem opcao de criar conta.
 
-- Login: `marcosvinidirect`
+- Login: `marcosvinidirect@gmail.com`
 - Senha: definida no app apenas como hash SHA-256, nao em texto puro.
 
 Para seguranca real no Supabase:
 
-1. Crie um usuario em Authentication > Users com o email `marcosvinidirect@direct.local` e a mesma senha administrativa.
-2. Depois disso, rode `supabase.secure-auth-policies.sql` no SQL Editor.
+1. Crie um usuario em Authentication > Users com o email `marcosvinidirect@gmail.com` e a mesma senha administrativa.
+2. Rode `supabase.full-schema.sql` no SQL Editor.
 
-Nao rode `supabase.secure-auth-policies.sql` antes de criar esse usuario, pois as tabelas deixam de aceitar escrita anonima e o app nao conseguira salvar no banco.
+O schema completo remove as políticas anônimas antigas e libera CRUD somente para usuários autenticados. A chave pública pode permanecer no frontend porque a proteção dos dados fica a cargo do Supabase Auth e das políticas RLS.
 
-As políticas atuais liberam CRUD para a chave pública `anon`, adequado para um protótipo sem login. Para produção, o ideal é adicionar autenticação e restringir as políticas por usuário ou equipe.
+### Perfis e auditoria
+
+O arquivo `supabase.full-schema.sql` cria quatro funções de acesso:
+
+- `admin`: acesso completo, financeiro, CPF completo e logs.
+- `financeiro`: acesso ao financeiro, sem CPF completo.
+- `rh`: acesso ao CPF completo, sem financeiro.
+- `operador`: operação diária, sem financeiro e com CPF mascarado.
+
+Novos usuários recebem automaticamente o perfil `operador`. Para alterar uma função, edite a coluna `role` da tabela `profiles` pelo Table Editor do Supabase usando um usuário administrador.
+
+Os acessos são registrados em `access_logs`. Inclusões e alterações nas tabelas operacionais são registradas automaticamente em `audit_logs`; somente administradores podem consultar esses logs.
 
 ## Preparado para Vercel
 

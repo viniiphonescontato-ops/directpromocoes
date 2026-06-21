@@ -1,0 +1,339 @@
+TAREFA: CRIAR A ABA JARVIS COMPLETA NO SAAS DIRECT PROMOCOES
+
+Implemente esta funcionalidade dentro do projeto existente. Nao recrie o SaaS do zero e nao remova as telas, rotas, autenticacao, integracao Supabase ou funcionalidades atuais.
+
+STACK OBRIGATORIA
+
+- React
+- TypeScript
+- Tailwind CSS
+- Framer Motion
+- Three.js usando @react-three/fiber e @react-three/drei
+- Lucide React para icones
+- Supabase para dados, autenticacao e atualizacoes em tempo real
+
+DEPENDENCIAS
+
+Instale, caso ainda nao existam:
+
+npm install three @react-three/fiber @react-three/drei framer-motion lucide-react
+npm install -D @types/three
+
+OBJETIVO
+
+Adicionar no menu principal uma nova opcao chamada Jarvis. Ao clicar, abrir uma central exclusiva de inteligencia operacional. A experiencia deve ser dark, futurista, premium, poderosa, misteriosa e intimidadora, sem parecer um template generico.
+
+Nao alterar o tema das outras telas. O modo Jarvis deve ser aplicado apenas na rota ou view Jarvis.
+
+NAVEGACAO
+
+- Adicionar item Jarvis logo depois de Dashboard.
+- Usar icone BrainCircuit do Lucide.
+- Desktop: manter sidebar recolhida com tooltip acima dos cards.
+- Mobile: incluir Jarvis na navegacao inferior sem quebrar ou sobrepor outros itens.
+- Criar rota /jarvis ou integrar ao sistema de views existente.
+
+ESTRUTURA SUGERIDA
+
+src/
+  components/
+    jarvis/
+      JarvisOrb.tsx
+      JarvisChat.tsx
+      JarvisComposer.tsx
+      JarvisMessage.tsx
+      JarvisSuggestions.tsx
+      JarvisStatus.tsx
+  hooks/
+    useJarvisData.ts
+    useSpeechRecognition.ts
+  pages/
+    Jarvis.tsx
+  services/
+    jarvisService.ts
+  types/
+    jarvis.ts
+
+TIPOS
+
+Crie tipos semelhantes a estes:
+
+type JarvisRole = "user" | "assistant";
+
+interface JarvisMessage {
+  id: string;
+  role: JarvisRole;
+  content: string;
+  createdAt: string;
+  typing?: boolean;
+}
+
+interface JarvisOperationalSnapshot {
+  demands: number;
+  openDemands: number;
+  requestedShifts: number;
+  attendedShifts: number;
+  missingShifts: number;
+  activeWorkers: number;
+  stores: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+}
+
+PAGINA JARVIS
+
+A pagina deve ter:
+
+1. Cabecalho discreto
+- Eyebrow: INTELIGENCIA OPERACIONAL
+- Titulo: Jarvis
+- Sem campo de busca global.
+- Sem filtro 30d/60d/90d/180d.
+
+2. Orbe 3D no centro superior
+- Area full-width e sem card decorativo ao redor.
+- Altura responsiva entre 320px e 520px.
+- Canvas transparente.
+- Nucleo preto profundo com material metalico.
+- Casca externa com shader Fresnel.
+- Energia alternando entre lilas, violeta e vermelho carmesim.
+- Bordas instaveis usando displacement animado no shader.
+- Pelo menos 700 particulas orbitando.
+- Tres aneis magneticos com inclinacoes diferentes.
+- Tres ondas circulares expandindo e desaparecendo.
+- Efeito pulsante de respiracao.
+- Luz violeta e vermelha variando de intensidade.
+- Movimento suave reagindo ao ponteiro.
+- Respeitar prefers-reduced-motion.
+- Limitar devicePixelRatio a 2 para preservar desempenho mobile.
+- Pausar ou reduzir renderizacao quando a rota Jarvis nao estiver ativa.
+
+Use Canvas do @react-three/fiber. Separe Core, EnergyShell, MagneticRings, OrbitalParticles e SoundWaves em componentes reutilizaveis.
+
+3. Identificacao da orbe
+- Badge: SISTEMA NEURAL ATIVO
+- Titulo central: JARVIS
+- Subtitulo: INTELIGENCIA OPERACIONAL DIRECT
+- Badge com icone RadioTower e brilho vermelho.
+
+CHAT JARVIS
+
+Criar um painel glassmorphism abaixo da orbe:
+
+- Largura maxima aproximada de 980px.
+- Fundo preto/violeta translucido.
+- Blur entre 18px e 24px.
+- Borda lilas discreta.
+- Sombra profunda.
+- Raio maximo de 8px.
+- Cabecalho com Canal seguro, Central de comando e indicador Online.
+- Lista de mensagens com altura minima de 220px.
+- Scroll automatico para a mensagem mais recente.
+- Mensagem inicial do Jarvis explicando que pode analisar demandas, escalas, lojas e financeiro.
+
+MENSAGENS
+
+- Bolhas do usuario alinhadas a direita.
+- Bolhas do Jarvis alinhadas a esquerda.
+- Avatar do usuario com UserRound.
+- Avatar do Jarvis com BrainCircuit.
+- Efeito de digitacao com tres pontos antes da resposta.
+- Depois do loading, revelar a resposta progressivamente.
+- Usar aria-live="polite".
+
+SUGESTOES RAPIDAS
+
+Criar botoes horizontais rolaveis com estas frases:
+
+- Resumo das demandas de hoje
+- Quem ainda nao fez check-in?
+- Quais lojas estao atrasadas?
+- Gerar relatorio executivo
+- Analisar operacao em tempo real
+
+Ao clicar, enviar automaticamente a pergunta ao chat.
+
+COMPOSITOR
+
+- Ficar fixo ou sticky na base do painel de chat.
+- Botao de microfone a esquerda.
+- Campo central com placeholder: Comande o Jarvis...
+- Botao de enviar a direita com icone Send.
+- Enter envia a mensagem.
+- Desabilitar envio enquanto estiver vazio.
+- Evitar envio duplicado durante resposta.
+- Botao enviar com degradacao visual violeta para vermelho.
+- Estados hover, focus, loading e disabled.
+
+MICROFONE
+
+- Criar hook useSpeechRecognition.
+- Usar SpeechRecognition ou webkitSpeechRecognition quando disponivel.
+- Idioma pt-BR.
+- Mostrar estado listening com brilho vermelho.
+- Ao concluir, preencher e enviar a transcricao.
+- Quando indisponivel, mostrar mensagem clara no chat.
+
+DADOS REAIS DO SAAS
+
+O Jarvis deve ler os dados atuais do Supabase. Reutilize o cliente Supabase ja configurado. Nao use dados ficticios quando houver dados reais.
+
+Tabelas existentes:
+
+- demandas
+- diaristas
+- lojas_redes
+- setores
+- diarias_setor
+- diarias_empresas
+
+Mapeamento principal de demandas:
+
+- id
+- store_id
+- date
+- end_date
+- sector
+- spots
+- worker_cost
+- assigned_diarist_ids
+- status
+
+Calculos:
+
+- Diarias solicitadas = vagas x quantidade de dias.
+- Diarias atendidas = diaristas escalados x quantidade de dias, limitado ao solicitado.
+- Pendencias = solicitadas - atendidas.
+- Receita = diaria recebida da rede x vagas x dias.
+- Custo = valor pago ao diarista x vagas x dias.
+- Lucro = receita - custo.
+- Loja atrasada = demanda com data final anterior a hoje e status diferente de concluida.
+
+RESPOSTAS OPERACIONAIS
+
+Implemente respostas imediatas para as sugestoes:
+
+Resumo das demandas de hoje:
+- Quantidade de demandas no periodo de hoje.
+- Diarias solicitadas.
+- Diarias cobertas.
+- Posicoes sem escala.
+
+Quem ainda nao fez check-in?:
+- Caso ainda nao exista tabela de check-in, informar claramente que a analise usa diaristas escalados.
+- Listar demandas com vagas sem cobertura.
+- Preparar o codigo para futura tabela de check-ins.
+
+Quais lojas estao atrasadas?:
+- Listar lojas com demandas vencidas e nao concluidas.
+- Exibir quantidade de demandas atrasadas.
+
+Gerar relatorio executivo:
+- Demandas cadastradas.
+- Diaristas ativos.
+- Faturamento previsto.
+- Custo previsto.
+- Lucro estimado.
+
+Analisar operacao em tempo real:
+- Demandas abertas.
+- Diarias sem cobertura.
+- Diaristas ativos ou em reserva.
+- Principal risco operacional atual.
+
+SUPABASE REALTIME
+
+- Assinar mudancas nas tabelas demandas, diaristas e lojas_redes.
+- Atualizar o snapshot do Jarvis quando houver INSERT, UPDATE ou DELETE.
+- Remover os canais no cleanup do React.
+- Exibir respostas usando o estado atualizado.
+
+IA GENERATIVA OPCIONAL
+
+Prepare o servico jarvisService.ts para chamar uma Supabase Edge Function chamada jarvis-assistant.
+
+Regras de seguranca:
+
+- Nunca colocar chave privada de IA no frontend.
+- A Edge Function deve validar a sessao Supabase.
+- Enviar apenas o snapshot operacional necessario.
+- Aplicar limite de requisicoes.
+- Nao enviar CPF completo, senhas ou outros dados sensiveis ao modelo.
+- Se a Edge Function ainda nao existir, usar as respostas operacionais locais como fallback.
+
+SCROLLBARS GLASS
+
+Personalizar todas as barras de rolagem da pagina Jarvis:
+
+- Track escuro e translucido.
+- Thumb glass lilas com transicao para vermelho.
+- Brilho suave.
+- Hover mais claro.
+- Largura aproximada de 8px a 9px.
+- Aplicar no chat, sugestoes e pagina.
+- Compatibilidade com scrollbar-color no Firefox e ::-webkit-scrollbar em Chrome/Edge.
+
+Exemplo de tokens:
+
+--jarvis-bg: #03030a;
+--jarvis-panel: rgba(14, 10, 25, 0.76);
+--jarvis-text: #f5f2ff;
+--jarvis-muted: #a89dbd;
+--jarvis-violet: #a56dff;
+--jarvis-purple: #762ef2;
+--jarvis-red: #d72c5a;
+--jarvis-success: #51d8b3;
+
+RESPONSIVIDADE
+
+Desktop:
+- Orbe grande centralizada.
+- Chat com largura maxima de 980px.
+- Sugestoes em uma linha rolavel.
+
+Tablet:
+- Manter orbe central.
+- Reduzir altura e espacamentos.
+- Chat ocupar toda largura disponivel.
+
+Mobile ate 430px:
+- Orbe com altura aproximada de 320px.
+- Chat ocupar 100% da largura.
+- Mensagens com largura maxima de 92%.
+- Campo e botoes com no minimo 42px de altura.
+- Navegacao inferior sem sobreposicao.
+- Adicionar padding inferior considerando safe-area-inset-bottom.
+- Nao permitir overflow horizontal da pagina.
+- Texto nunca deve sair dos cards ou botoes.
+
+ACESSIBILIDADE
+
+- Contraste minimo WCAG AA.
+- Focus-visible em botoes e campo.
+- Labels e aria-label nos botoes de microfone e enviar.
+- Canvas com descricao acessivel.
+- Chat com aria-live.
+- Respeitar prefers-reduced-motion.
+- Nao depender apenas de cor para indicar status.
+
+CRITERIOS DE ACEITE
+
+- A aba Jarvis aparece no desktop e mobile.
+- A orbe renderiza sem canvas preto ou vazio.
+- Particulas, aneis, ondas e pulsacao ficam animados.
+- A tela nao quebra ao alternar tema do SaaS.
+- Sugestoes enviam mensagens.
+- Enter envia mensagem.
+- Microfone funciona quando suportado.
+- Respostas utilizam dados reais do Supabase.
+- Atualizacoes do Supabase aparecem sem recarregar a pagina.
+- Scrollbars glass aparecem no Jarvis.
+- Nenhuma chave privada fica no frontend.
+- Nenhuma funcionalidade existente e removida.
+- Sem erros TypeScript, ESLint ou console.
+- Verificar visualmente em 1440x900, 1024x768, 390x844 e 360x800.
+
+ENTREGA
+
+Implemente todos os componentes, hooks, servicos, estilos, rota, navegacao e integracao Supabase. Ao finalizar, liste os arquivos criados e alterados e informe qualquer etapa externa ainda necessaria, como criar a Edge Function para IA generativa.

@@ -14,6 +14,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css" />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="backend.config.js" defer></script>
     <script src="supabase-client.js" defer></script>
@@ -33,7 +34,7 @@
         </div>
         <p class="login-copy">Acesso interno da Direct Promocoes. Use seu login administrativo para continuar.</p>
         <form id="loginForm" class="stack-form login-form" autocomplete="on">
-          <label>Login<input id="loginUser" name="user" autocomplete="username" required placeholder="Seu login" /></label>
+          <label>E-mail<input id="loginUser" name="user" autocomplete="username" inputmode="email" required placeholder="seuemail@empresa.com" type="email" /></label>
           <label>Senha<input id="loginPassword" name="password" autocomplete="current-password" required placeholder="Sua senha" type="password" /></label>
           <p id="loginError" class="login-error" role="alert" hidden>Login ou senha incorretos.</p>
           <button class="primary-btn" type="submit"><i data-lucide="log-in"></i>Entrar</button>
@@ -52,53 +53,52 @@
             <small>Operacao promocional</small>
           </span>
         </a>
+        <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Recolher menu" aria-expanded="true" title="Recolher menu">
+          <i data-lucide="panel-left-close"></i>
+        </button>
 
         <nav class="main-nav">
           <button class="nav-item active" type="button" data-view="dashboard">
             <i data-lucide="layout-dashboard"></i>
-            <span>Dashboard</span>
-          </button>
-          <button class="nav-item" type="button" data-view="diaristas">
-            <i data-lucide="user-round"></i>
-            <span>Diaristas</span>
+            <span>Painel</span>
           </button>
           <button class="nav-item" type="button" data-view="demandas">
             <i data-lucide="clipboard-list"></i>
             <span>Demandas</span>
           </button>
+          <button class="nav-item" type="button" data-view="diaristas">
+            <i data-lucide="users"></i>
+            <span>Diaristas</span>
+          </button>
           <button class="nav-item" type="button" data-view="lojas">
             <i data-lucide="store"></i>
-            <span>Lojas & Redes</span>
+            <span>Lojas &amp; Redes</span>
           </button>
           <button class="nav-item" type="button" data-view="financeiro">
-            <i data-lucide="bar-chart-3"></i>
+            <i data-lucide="dollar-sign"></i>
             <span>Financeiro</span>
           </button>
           <button class="nav-item" type="button" data-view="configuracoes">
             <i data-lucide="settings"></i>
-            <span>Configuracoes</span>
+            <span>Configurações</span>
+          </button>
+          <button class="nav-item jarvis-nav-item" type="button" data-view="jarvis">
+            <i data-lucide="sparkles"></i>
+            <span>Jarvis</span>
           </button>
         </nav>
 
-        <button id="themeToggle" class="nav-item theme-toggle" type="button" aria-label="Alternar para modo escuro" aria-pressed="false">
-          <i data-lucide="moon"></i>
-          <span>Modo escuro</span>
-        </button>
+        <div class="sidebar-account">
+          <span>marcosvinidirect@gmail.com</span>
+          <button id="logoutButton" class="nav-item logout-toggle" type="button" aria-label="Sair do sistema">
+            <i data-lucide="log-out"></i>
+            <span>Sair</span>
+          </button>
+        </div>
 
-        <button id="logoutButton" class="nav-item logout-toggle" type="button" aria-label="Sair do sistema">
-          <i data-lucide="log-out"></i>
-          <span>Sair</span>
-        </button>
-
-        <div class="sidebar-panel">
-          <img src="assets/direct-promocoes-logo.jpeg" alt="" />
-          <div>
-            <strong>Meta do mes</strong>
-            <span id="sidebarGoal">78% concluida</span>
-          </div>
-          <div class="mini-progress" aria-hidden="true">
-            <span style="width: 78%"></span>
-          </div>
+        <div class="sidebar-footer">
+          <span>&copy; 2026 Direct Promocoes</span>
+          <small>Fortaleza/CE</small>
         </div>
       </aside>
 
@@ -123,89 +123,113 @@
         </header>
 
         <section class="kpi-grid view-panel active" data-view-panel="dashboard" aria-label="Indicadores principais">
+          <div class="view-title-row full-span">
+            <div><h2>Painel Geral</h2></div>
+          </div>
           <article class="kpi-card">
-            <div class="kpi-icon revenue"><i data-lucide="banknote"></i></div>
-            <span>Faturamento</span>
-            <strong id="revenueValue">R$ 0</strong>
-            <small id="revenueTrend">receita prevista</small>
+            <div class="kpi-icon conversion"><i data-lucide="users"></i></div>
+            <span>Diaristas</span>
+            <strong id="revenueValue">0</strong>
+            <small id="revenueTrend">cadastrados</small>
           </article>
           <article class="kpi-card">
-            <div class="kpi-icon clients"><i data-lucide="user-round-check"></i></div>
-            <span>Diarias atendidas</span>
+            <div class="kpi-icon clients"><i data-lucide="clipboard-list"></i></div>
+            <span>Diarias Feitas</span>
             <strong id="attendedValue">0</strong>
-            <small id="attendedTrend">alocacoes realizadas</small>
+            <small id="attendedTrend">registros</small>
           </article>
           <article class="kpi-card">
-            <div class="kpi-icon conversion"><i data-lucide="target"></i></div>
-            <span>Demandas concluidas</span>
-            <strong id="conversionValue">0%</strong>
-            <small id="conversionTrend">taxa de atendimento</small>
+            <div class="kpi-icon revenue"><i data-lucide="store"></i></div>
+            <span>Lojas Atendidas</span>
+            <strong id="conversionValue">0</strong>
+            <small id="conversionTrend">lojas</small>
           </article>
-          <article class="kpi-card">
-            <div class="kpi-icon tasks"><i data-lucide="alarm-clock-check"></i></div>
-            <span>Margem prevista</span>
+          <article class="kpi-card" data-finance-sensitive>
+            <div class="kpi-icon tasks"><i data-lucide="dollar-sign"></i></div>
+            <span>Total Pago</span>
             <strong id="marginValue">R$ 0</strong>
-            <small id="marginTrend">faturamento menos custos</small>
+            <small id="marginTrend">financeiro</small>
           </article>
         </section>
 
         <section class="dashboard-report-grid view-panel active" data-view-panel="dashboard">
-          <article class="panel report-card">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Faturamento</p>
-                <h3>Receita por rede</h3>
-              </div>
-              <span id="revenuePieTotal" class="subtle-badge">R$ 0</span>
-            </div>
-            <div class="donut-wrap dashboard-donut">
-              <canvas id="revenuePieChart" width="260" height="260" aria-label="Grafico de faturamento por rede"></canvas>
-              <div id="revenuePieLegend" class="legend"></div>
-            </div>
-          </article>
-
-          <article class="panel report-card">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Diarias</p>
-                <h3>Atendidas por rede</h3>
-              </div>
-              <span id="attendedPieTotal" class="subtle-badge">0 diarias</span>
-            </div>
-            <div class="donut-wrap dashboard-donut">
-              <canvas id="attendedPieChart" width="260" height="260" aria-label="Grafico de diarias atendidas por rede"></canvas>
-              <div id="attendedPieLegend" class="legend"></div>
-            </div>
-          </article>
-
-          <article class="panel report-card">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Setores</p>
-                <h3>Demandas por setor</h3>
-              </div>
-              <span id="sectorPieTotal" class="subtle-badge">0 demandas</span>
-            </div>
-            <div class="donut-wrap dashboard-donut">
-              <canvas id="sectorPieChart" width="260" height="260" aria-label="Grafico de demandas por setor"></canvas>
-              <div id="sectorPieLegend" class="legend"></div>
-            </div>
+          <article class="panel recent-panel">
+            <div class="panel-heading"><h3>Ultimos Registros</h3></div>
+            <div id="dashboardRecentRecords" class="record-list"></div>
           </article>
         </section>
 
+        <section class="view-panel jarvis-view" data-view-panel="jarvis" aria-label="Assistente Jarvis">
+          <div class="jarvis-orb-stage" aria-label="Nucleo de inteligencia artificial Jarvis">
+            <canvas id="jarvisOrbCanvas"></canvas>
+            <div class="jarvis-orb-copy">
+              <span class="jarvis-status"><i data-lucide="radio-tower"></i>Sistema neural ativo</span>
+              <h2>JARVIS</h2>
+              <p>Inteligencia operacional Direct</p>
+            </div>
+            <button id="themeToggle" class="theme-switch" type="button" aria-label="Ativar modo claro" aria-pressed="true" title="Alternar tema">
+              <i data-lucide="sun" data-theme-icon="light"></i>
+              <span class="theme-switch-thumb" aria-hidden="true"></span>
+              <i data-lucide="moon" data-theme-icon="dark"></i>
+            </button>
+            <span class="live-badge"><span></span>Ao vivo</span>
+          </div>
+
+          <div class="jarvis-chat-shell">
+            <div class="jarvis-chat-head">
+              <div>
+                <p class="eyebrow">Canal seguro</p>
+                <h3>Central de comando</h3>
+              </div>
+              <span class="jarvis-online"><span></span>Online</span>
+            </div>
+
+            <div id="jarvisSuggestions" class="jarvis-suggestions" aria-label="Sugestoes rapidas">
+              <button type="button" data-jarvis-prompt="Resumo das demandas de hoje">Resumo das demandas de hoje</button>
+              <button type="button" data-jarvis-prompt="Quem ainda nao fez check-in?">Quem ainda nao fez check-in?</button>
+              <button type="button" data-jarvis-prompt="Quais lojas estao atrasadas?">Quais lojas estao atrasadas?</button>
+              <button type="button" data-jarvis-prompt="Gerar relatorio executivo">Gerar relatorio executivo</button>
+              <button type="button" data-jarvis-prompt="Analisar operacao em tempo real">Analisar operacao em tempo real</button>
+            </div>
+
+            <div id="jarvisMessages" class="jarvis-messages" aria-live="polite">
+              <div class="jarvis-message assistant">
+                <span class="jarvis-avatar"><i data-lucide="brain-circuit"></i></span>
+                <div class="jarvis-bubble">
+                  <strong>Jarvis</strong>
+                  <p>Conexao estabelecida. Posso analisar demandas, escalas, lojas e indicadores financeiros da operacao.</p>
+                </div>
+              </div>
+            </div>
+
+            <form id="jarvisChatForm" class="jarvis-composer">
+              <button id="jarvisMicButton" class="jarvis-tool-btn" type="button" title="Usar microfone" aria-label="Usar microfone"><i data-lucide="mic"></i></button>
+              <input id="jarvisMessageInput" autocomplete="off" placeholder="Comande o Jarvis..." />
+              <button class="jarvis-send-btn" type="submit" title="Enviar mensagem" aria-label="Enviar mensagem"><i data-lucide="send"></i></button>
+            </form>
+          </div>
+        </section>
+
         <section class="view-panel workspace-grid" data-view-panel="diaristas">
-          <article class="panel form-panel">
+          <div class="operations-page-head full-span">
+            <div><h2>Diaristas</h2><p><span id="diaristTotalHeader">0</span> cadastrado(s)</p></div>
+            <button class="primary-btn" type="button" data-open-modal="diaristModal"><i data-lucide="plus"></i>Novo Diarista</button>
+          </div>
+          <article id="diaristModal" class="panel form-panel modal-panel">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Cadastro rapido</p>
-                <h3>Nova diarista</h3>
+                <h3>Nova Diarista</h3>
               </div>
+              <button class="modal-close" type="button" data-close-modal="diaristModal" aria-label="Fechar"><i data-lucide="x"></i></button>
             </div>
             <form id="diaristForm" class="stack-form">
               <input name="id" type="hidden" />
               <label>Nome completo<input name="name" required placeholder="Ex.: Maria Oliveira" /></label>
-              <label>Telefone<input name="phone" required placeholder="(85) 99999-0000" /></label>
-              <label>CPF<input name="cpf" placeholder="000.000.000-00" /></label>
+              <div class="inline-control">
+                <label>CPF<input name="cpf" required inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00" /></label>
+                <label>Telefone<input name="phone" required inputmode="tel" autocomplete="tel" maxlength="15" placeholder="(85) 99999-0000" /></label>
+              </div>
+              <label>Bairro<input name="neighborhood" placeholder="Bairro onde mora" /></label>
               <input id="diaristSectorsInput" name="sectors" type="hidden" />
               <div class="field-block sector-picker">
                 <span class="field-label">Setores</span>
@@ -220,23 +244,20 @@
                 </div>
               </div>
               <div class="form-actions">
-                <button class="primary-btn" type="submit"><i data-lucide="save"></i>Salvar</button>
-                <button class="ghost-btn" type="reset">Limpar</button>
+                <button class="primary-btn full-button" type="submit">Cadastrar</button>
               </div>
             </form>
-          </article>
+          </details>
           <article class="panel list-panel">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Equipe</p>
-                <h3>Diaristas cadastradas</h3>
-              </div>
-              <div class="panel-heading-actions">
                 <label class="mini-search">
                   <i data-lucide="search"></i>
-                  <input id="diaristNameSearch" type="search" placeholder="Buscar por nome" />
+                  <input id="diaristNameSearch" type="search" placeholder="Buscar por nome, CPF, setor ou bairro..." />
                 </label>
-                <span id="diaristCount" class="subtle-badge">0 ativas</span>
+              </div>
+              <div class="panel-heading-actions">
+                <span id="diaristCount" class="subtle-badge">0 cadastrados</span>
               </div>
             </div>
             <div id="diaristList" class="record-list"></div>
@@ -244,12 +265,31 @@
         </section>
 
         <section class="view-panel workspace-grid" data-view-panel="demandas">
-          <article class="panel form-panel">
+          <div class="operations-page-head full-span">
+            <div><h2>Demandas</h2><p>Acompanhe as diarias de supermercado</p></div>
+            <button class="primary-btn" type="button" data-open-modal="demandModal"><i data-lucide="plus"></i>Nova Demanda</button>
+          </div>
+          <div class="demand-status-grid full-span">
+            <article class="kpi-card"><div class="kpi-icon conversion"><i data-lucide="store"></i></div><span>Total de diarias</span><strong id="demandTotalMetric">0</strong></article>
+            <article class="kpi-card"><div class="kpi-icon neutral"><i data-lucide="circle-dashed"></i></div><span>Aguardando</span><strong id="demandWaitingMetric">0</strong></article>
+            <article class="kpi-card"><div class="kpi-icon clients"><i data-lucide="user-check"></i></div><span>Presentes</span><strong id="demandPresentMetric">0</strong></article>
+            <article class="kpi-card"><div class="kpi-icon warning"><i data-lucide="user-x"></i></div><span>Faltas</span><strong id="demandAbsentMetric">0</strong></article>
+          </div>
+          <div class="demand-toolbar full-span">
+            <div class="status-tabs" id="demandStatusTabs">
+              <button class="active" type="button" data-demand-tab="all">Todas <span id="tabAllCount">0</span></button>
+              <button type="button" data-demand-tab="waiting">Aguardando <span id="tabWaitingCount">0</span></button>
+              <button type="button" data-demand-tab="present">Presentes <span id="tabPresentCount">0</span></button>
+              <button type="button" data-demand-tab="absent">Faltas <span id="tabAbsentCount">0</span></button>
+            </div>
+            <label class="mini-search"><i data-lucide="search"></i><input id="demandStoreSearch" type="search" placeholder="Buscar demanda..." /></label>
+          </div>
+          <article id="demandModal" class="panel form-panel modal-panel">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Operacao</p>
-                <h3>Nova demanda</h3>
+                <h3>Nova Demanda</h3>
               </div>
+              <button class="modal-close" type="button" data-close-modal="demandModal" aria-label="Fechar"><i data-lucide="x"></i></button>
             </div>
             <form id="demandForm" class="stack-form">
               <input name="id" type="hidden" />
@@ -258,26 +298,21 @@
                 <label>Data de inicio<input name="startDate" required type="date" /></label>
                 <label>Data do fim<input name="endDate" required type="date" /></label>
               </div>
+              <label>Horario da diaria<input name="startTime" type="time" value="08:00" /></label>
               <label>Setor<select id="sectorSelect" name="sector" required></select></label>
               <label>Vagas<input name="spots" required min="1" type="number" value="1" /></label>
               <label>Valor pago ao diarista<input name="workerCost" inputmode="decimal" pattern="^[0-9]+([,.][0-9]{1,2})?$" placeholder="Ex.: 120,75" value="120,00" /></label>
               <div class="form-actions">
-                <button class="primary-btn" type="submit"><i data-lucide="save"></i>Salvar demanda</button>
-                <button class="ghost-btn" type="reset">Limpar</button>
+                <button class="primary-btn full-button" type="submit">Criar Demanda</button>
               </div>
             </form>
-          </article>
+          </details>
           <article class="panel list-panel">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Fila</p>
-                <h3>Demandas abertas</h3>
+                <h3>Demandas</h3>
               </div>
               <div class="panel-heading-actions">
-                <label class="mini-search">
-                  <i data-lucide="search"></i>
-                  <input id="demandStoreSearch" type="search" placeholder="Buscar por loja" />
-                </label>
                 <span id="demandCount" class="subtle-badge">0 abertas</span>
               </div>
             </div>
@@ -286,13 +321,8 @@
         </section>
 
         <section class="view-panel workspace-grid" data-view-panel="lojas">
-          <article class="panel form-panel">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Rede comercial</p>
-                <h3>Nova loja ou rede</h3>
-              </div>
-            </div>
+          <details id="storeCreatePanel" class="panel form-panel collapsible-form-panel">
+            <summary><span><i data-lucide="plus-circle"></i><strong>Adicionar rede ou loja</strong></span><i data-lucide="chevron-down"></i></summary>
             <form id="storeForm" class="stack-form">
               <input name="id" type="hidden" />
               <label>Rede<input name="network" placeholder="Ex.: Hipermarket" /></label>
@@ -320,6 +350,10 @@
         </section>
 
         <section class="view-panel finance-grid" data-view-panel="financeiro">
+          <div class="operations-page-head full-span">
+            <div><h2>Financeiro</h2><p><span id="financialRecordCount">0</span> registro(s)</p></div>
+            <button class="primary-btn" type="button" data-open-modal="financialModal"><i data-lucide="plus"></i>Novo Registro</button>
+          </div>
           <article class="panel finance-filter-panel">
             <div class="panel-heading">
               <div>
@@ -334,61 +368,94 @@
             </div>
           </article>
           <article class="kpi-card">
-            <div class="kpi-icon revenue"><i data-lucide="wallet"></i></div>
-            <span>Faturamento previsto</span>
-            <strong id="financeTotal">R$ 0</strong>
-            <small>recebimento das empresas</small>
-          </article>
-          <article class="kpi-card">
-            <div class="kpi-icon clients"><i data-lucide="receipt"></i></div>
-            <span>Custo previsto</span>
-            <strong id="financeCost">R$ 0</strong>
-            <small>valor pago aos diaristas</small>
-          </article>
-          <article class="kpi-card">
             <div class="kpi-icon conversion"><i data-lucide="trending-up"></i></div>
+            <span>Faturamento previsto</span>
+            <strong id="financeTotal">R$ 0,00</strong>
+            <small id="financePotentialCount">0 demandas no período</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon clients"><i data-lucide="wallet-cards"></i></div>
+            <span>Custo com diaristas</span>
+            <strong id="financeCost">R$ 0,00</strong>
+            <small id="financeConfirmedCount">0 diárias solicitadas</small>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon warning"><i data-lucide="badge-dollar-sign"></i></div>
             <span>Lucro estimado</span>
-            <strong id="financeProfit">R$ 0</strong>
-            <small>faturamento menos custos</small>
+            <strong id="financeProfit">R$ 0,00</strong>
+            <small id="financeWaitingCount">receita menos custos</small>
           </article>
           <article class="kpi-card">
-            <div class="kpi-icon warning"><i data-lucide="percent"></i></div>
+            <div class="kpi-icon revenue"><i data-lucide="percent"></i></div>
             <span>Margem estimada</span>
-            <strong id="financeMargin">0%</strong>
-            <small>lucro sobre faturamento</small>
+            <strong id="financeMargin">0,00%</strong>
+            <small id="financeLostCount">rentabilidade prevista</small>
           </article>
+          <article class="kpi-card"><span>Diárias solicitadas</span><strong id="financeRequested">0</strong></article>
           <article class="kpi-card">
-            <div class="kpi-icon revenue"><i data-lucide="calendar-days"></i></div>
-            <span>Diarias solicitadas</span>
-            <strong id="financeRequested">0</strong>
-            <small>vagas x dias</small>
-          </article>
-          <article class="kpi-card">
-            <div class="kpi-icon clients"><i data-lucide="check-circle-2"></i></div>
-            <span>Diarias atendidas</span>
+            <span>Diárias atendidas</span>
             <strong id="financeAttended">0</strong>
-            <small>diaristas escaladas</small>
           </article>
           <article class="kpi-card">
-            <div class="kpi-icon warning"><i data-lucide="alert-triangle"></i></div>
-            <span>Faltas/Pendencias</span>
+            <span>Faltas ou vagas pendentes</span>
             <strong id="financeAbsences">0</strong>
-            <small>diarias sem escala</small>
           </article>
           <article class="kpi-card">
-            <div class="kpi-icon clients"><i data-lucide="badge-dollar-sign"></i></div>
-            <span>Ticket medio</span>
-            <strong id="financeAverage">R$ 0</strong>
-            <small>por demanda filtrada</small>
+            <span>Ticket médio por demanda</span>
+            <strong id="financeAverage">R$ 0,00</strong>
+          </article>
+          <article class="panel finance-report-panel">
+            <div class="panel-heading"><div><p class="eyebrow">Relatório</p><h3>Resumo do período</h3></div></div>
+            <div id="financeReport" class="finance-report-list"></div>
+          </article>
+          <article class="panel finance-line-panel">
+            <div class="panel-heading"><div><p class="eyebrow">Evolução</p><h3>Faturamento, custo e lucro por data</h3></div></div>
+            <div class="finance-line-chart"><canvas id="financeTimelineCanvas" width="900" height="260"></canvas></div>
+          </article>
+          <article class="panel finance-chart-card">
+            <div class="panel-heading"><h3>Faturamento por rede</h3></div>
+            <div class="finance-donut"><canvas id="financeNetworkCanvas" width="240" height="240"></canvas><div id="financeNetworkLegend" class="chart-legend"></div></div>
+          </article>
+          <article class="panel finance-chart-card">
+            <div class="panel-heading"><h3>Faturamento por loja</h3></div>
+            <div class="finance-donut"><canvas id="financeStoreCanvas" width="240" height="240"></canvas><div id="financeStoreLegend" class="chart-legend"></div></div>
+          </article>
+          <article class="panel finance-chart-card">
+            <div class="panel-heading"><h3>Diárias por setor</h3></div>
+            <div class="finance-donut"><canvas id="financeSectorCanvas" width="240" height="240"></canvas><div id="financeSectorLegend" class="chart-legend"></div></div>
+          </article>
+          <article class="panel finance-expense-panel">
+            <div class="panel-heading"><div><p class="eyebrow">Pagamentos</p><h3>Custos registrados</h3></div></div>
+            <div class="finance-expense-grid">
+              <div><span>Passagens</span><strong id="financeTransport">R$ 0,00</strong></div>
+              <div><span>Adiantamentos</span><strong id="financeAdvances">R$ 0,00</strong></div>
+              <div><span>Outros custos</span><strong id="financeExtraCosts">R$ 0,00</strong></div>
+              <div><span>Pagos</span><strong id="financePaid">R$ 0,00</strong></div>
+              <div><span>A pagar</span><strong id="financeDue">R$ 0,00</strong></div>
+            </div>
           </article>
           <article class="panel finance-table-panel">
             <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Resumo</p>
-                <h3>Financeiro por demanda</h3>
-              </div>
+              <div><p class="eyebrow">Histórico</p><h3>Demandas por rede e loja</h3></div>
+              <label class="mini-search"><i data-lucide="search"></i><input id="financialSearch" type="search" placeholder="Buscar loja, rede ou setor" /></label>
             </div>
             <div id="financeList" class="record-list"></div>
+          </article>
+
+          <article id="financialModal" class="panel form-panel modal-panel financial-modal">
+            <div class="panel-heading"><h3>Novo Registro Financeiro</h3><button class="modal-close" type="button" data-close-modal="financialModal" aria-label="Fechar"><i data-lucide="x"></i></button></div>
+            <form id="financialForm" class="stack-form">
+              <input name="id" type="hidden" />
+              <label>Diarista *<select id="financialDiaristSelect" name="diaristId" required></select></label>
+              <div class="inline-control"><label>Loja *<input name="store" required placeholder="Nome do supermercado" /></label><label>Data *<input name="date" required type="date" /></label></div>
+              <div class="inline-control"><label>Horario Entrada<input name="startTime" type="time" /></label><label>Horario Saida<input name="endTime" type="time" /></label></div>
+              <label>Setor<input name="sector" placeholder="Ex.: Padaria, Frios, Caixa..." /></label>
+              <div class="inline-control"><label>Valor da Diaria (R$)<input name="dailyValue" inputmode="decimal" value="0,00" /></label><label>Passagem (R$)<input name="transport" inputmode="decimal" value="0,00" /></label></div>
+              <div class="inline-control"><label>Adiantamento (R$)<input name="advance" inputmode="decimal" value="0,00" /></label><label>Outros custos (R$)<input name="extraCosts" inputmode="decimal" value="0,00" /></label></div>
+              <label class="check-label"><input name="paid" type="checkbox" />Marcar como pago</label>
+              <label>Observacoes<textarea name="notes" rows="3" placeholder="Observacoes adicionais..."></textarea></label>
+              <button class="primary-btn full-button" type="submit">Registrar</button>
+            </form>
           </article>
         </section>
 
