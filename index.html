@@ -17,8 +17,18 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="backend.config.js" defer></script>
-    <script src="supabase-client.js" defer></script>
-    <script src="app.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/state.js" defer></script>
+    <script src="js/storage.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/supabase-service.js" defer></script>
+    <script src="js/diaristas.js" defer></script>
+    <script src="js/demandas.js" defer></script>
+    <script src="js/lojas.js" defer></script>
+    <script src="js/financeiro.js" defer></script>
+    <script src="js/jarvis.js" defer></script>
+    <script src="js/ui.js" defer></script>
+    <script src="js/app.js" defer></script>
   </head>
   <body>
     <section id="loginScreen" class="login-screen" aria-label="Acesso restrito">
@@ -81,6 +91,10 @@
           <button class="nav-item" type="button" data-view="configuracoes">
             <i data-lucide="settings"></i>
             <span>Configurações</span>
+          </button>
+          <button class="nav-item" type="button" data-view="usuarios">
+            <i data-lucide="shield-user"></i>
+            <span>Usuários</span>
           </button>
           <button class="nav-item jarvis-nav-item" type="button" data-view="jarvis">
             <i data-lucide="sparkles"></i>
@@ -247,7 +261,7 @@
                 <button class="primary-btn full-button" type="submit">Cadastrar</button>
               </div>
             </form>
-          </details>
+          </article>
           <article class="panel list-panel">
             <div class="panel-heading">
               <div>
@@ -306,7 +320,7 @@
                 <button class="primary-btn full-button" type="submit">Criar Demanda</button>
               </div>
             </form>
-          </details>
+          </article>
           <article class="panel list-panel">
             <div class="panel-heading">
               <div>
@@ -336,7 +350,7 @@
                 <button class="ghost-btn" type="reset">Limpar</button>
               </div>
             </form>
-          </article>
+          </details>
           <article class="panel list-panel">
             <div class="panel-heading">
               <div>
@@ -512,8 +526,69 @@
             <div id="companyRateList" class="record-list compact-list"></div>
           </article>
         </section>
+
+        <section class="view-panel workspace-grid" data-view-panel="usuarios">
+          <article class="panel form-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Acesso interno</p>
+                <h3>Convidar usuário</h3>
+              </div>
+            </div>
+            <form id="userInviteForm" class="stack-form">
+              <label>Nome<input name="name" required placeholder="Ex.: Ana Supervisora" /></label>
+              <label>E-mail<input name="email" required type="email" placeholder="usuario@empresa.com" /></label>
+              <label>Perfil
+                <select name="role" required>
+                  <option value="dono">Dono</option>
+                  <option value="administrador">Administrador</option>
+                  <option value="financeiro">Financeiro</option>
+                  <option value="rh">RH</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="operador" selected>Operador</option>
+                  <option value="cliente">Cliente</option>
+                </select>
+              </label>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit"><i data-lucide="mail-plus"></i>Gerar convite</button>
+                <button class="ghost-btn" type="reset">Limpar</button>
+              </div>
+              <p class="muted-line">O convite fica registrado no banco. Para envio automatico por e-mail, conecte uma Edge Function usando service_role.</p>
+            </form>
+          </article>
+          <article class="panel list-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Permissões</p>
+                <h3>Usuários e perfis</h3>
+              </div>
+              <label class="mini-search"><i data-lucide="search"></i><input id="userSearch" type="search" placeholder="Buscar usuário, e-mail ou perfil" /></label>
+            </div>
+            <div id="userList" class="record-list"></div>
+          </article>
+          <article class="panel list-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Convites</p>
+                <h3>Fila de convites</h3>
+              </div>
+              <span id="inviteCount" class="subtle-badge">0 convites</span>
+            </div>
+            <div id="inviteList" class="record-list compact-list"></div>
+          </article>
+          <article class="panel list-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Mapa de acesso</p>
+                <h3>Perfis recomendados</h3>
+              </div>
+            </div>
+            <div id="rolePermissionList" class="role-permission-list"></div>
+          </article>
+        </section>
         <datalist id="sectorOptions"></datalist>
       </main>
     </div>
+    <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
   </body>
 </html>

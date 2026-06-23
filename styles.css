@@ -1249,6 +1249,44 @@ canvas {
   font-weight: 900;
 }
 
+.user-record .record-actions {
+  min-width: 280px;
+}
+
+.role-permission-list {
+  display: grid;
+  gap: 10px;
+}
+
+.permission-row {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  background: color-mix(in srgb, var(--panel-bg) 84%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.permission-row strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .user-record .record-actions {
+    min-width: 0;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .user-record .record-actions .status-select {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
 .status-select {
   min-height: 32px;
   border: 1px solid var(--line);
@@ -2682,6 +2720,64 @@ body:has(.modal-panel.modal-open) {
 .modal-close svg {
   width: 16px;
   height: 16px;
+}
+
+.toast-region {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 4200;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.app-toast {
+  border: 1px solid rgba(130, 166, 255, 0.32);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(8, 17, 40, 0.88);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.38);
+  color: #f8fbff;
+  font-size: 14px;
+  font-weight: 650;
+  backdrop-filter: blur(18px);
+  animation: toastIn 180ms ease-out both;
+}
+
+.app-toast.success {
+  border-color: rgba(0, 214, 167, 0.38);
+}
+
+.app-toast.error {
+  border-color: rgba(255, 91, 109, 0.48);
+}
+
+.app-toast.warning {
+  border-color: rgba(255, 190, 79, 0.48);
+}
+
+.app-toast.leaving {
+  animation: toastOut 220ms ease-in both;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastOut {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
 }
 
 .full-button {
